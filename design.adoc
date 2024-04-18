@@ -1,0 +1,105 @@
+= Social Trust Graph
+
+Graph based declaration of trust or distrust. We use cryptographic secrecy to
+maintain confidentiality, discretion, and dignity.
+
+A trusts B
+    A → B
+B acknowledges A's trust
+    B ← A
+They declare their mutual trust
+    A ↔ B
+    B ↔ A
+A does not trust B
+    A | B
+
+A clique is a K_n subgraph which all trusts each other.
+
+
+== History Preservation
+
+Every time something changes about the graph, the time of the change, and the
+previous state is preserved. What's the best data structure for this?
+
+We can store the current state of the graph, as well as a sequence of graph
+diffs which derive the current graph. These can then be played backwards to
+derive old versions.
+
+
+== Secrecy and Discretion
+
+The members of the network are empowered to share exactly what they choose, and
+no more. There are strong cryptographic guarantees of secrecy.
+
+
+== Cryptography
+
+Digital Cryptographic Agreement
+    We can agree on the state of things automatically and with high precision.
+
+How to send secondhand, relayed information?
+Gossip protocol, most information encrypted.
+Blockchain or similar to ensure forward causality and ordering of events?
+Merge operation? Key off of any previous transaction to make a mesh? DAG?
+    It is customary to sign off on all available leaf nodes of the DAG when
+    publishing a new block.
+
+
+== Implementation
+
+What language to use? Probably Rust.
+
+Availability of libraries for graph manipulation and cryptography.
+Zero Knowledge Proofs possibly needed, via zk-STARK or similar.
+Ring signatures possibly needed.
+
+Indexing into graph data if it gets large.
+
+Graphs: petgraph crate
+Serialization: CBOR, serde_cbor crate
+Database: Mozilla RKV, rkv crate
+Cryptography: Ristretto, curve25519-dalek crate
+
+
+=== Identity and Authentication
+
+A private key must exist, use Ristretto, and curve25519-dalek.
+Secure key storage needs to be solved, but not right away.
+
+
+== Scratch
+
+
+Can we build an index on declarations by a particular agent?
+Do we have timestamps on declarations?
+
+share state between people, secretly
+state is:
+    communication
+    reputation
+    money
+    agreement/contract
+
+
+Network Discovery
+    How do we discover the network?
+    source code, signed by authors, has some node urls hardcoded
+    list nodes from each server, telling "who's in the club"
+        all node lists must match
+    How do we add and remove members?
+        There is a shared datum which is the member graph.
+        I can unilaterally declare that I trust someone, and publish that
+        information.
+        Trust is tracked. You have ten trust tokens to distribute. The
+        number ten is the maximum network fanout.
+
+Network Integrity
+    attestation to prove same codebase
+
+Data Structures
+    What is the nature of the data structure that is shared between nodes?
+    Are nodes all identical or do they have different data?
+
+each user's interface is a full node
+
+node, beacon, relay

@@ -1,0 +1,10 @@
+2024-04-12
+
+design notes
+choosing libraries
+
+- Represent our test graph
+
+- Implement Bron-Kerbosch clique finding for petgraph
+    https://github.com/petgraph/petgraph/pull/72
+

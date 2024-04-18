@@ -47,8 +47,7 @@ Merge operation? Key off of any previous transaction to make a mesh? DAG?
 
 == Implementation
 
-What language to use? Probably Rust.
-
+Written in Rust.
 Availability of libraries for graph manipulation and cryptography.
 Zero Knowledge Proofs possibly needed, via zk-STARK or similar.
 Ring signatures possibly needed.
@@ -61,6 +60,16 @@ Database: Mozilla RKV, rkv crate
 Cryptography: Ristretto, curve25519-dalek crate
 
 
+=== Trust Tokens
+
+There is a limited amount of tokens each person has. Without loss of
+generality, our trust sums to 100.
+
+
+Trust is tracked. You have ten trust tokens to distribute. The
+number ten is the maximum network fanout.
+
+
 === Identity and Authentication
 
 A private key must exist, use Ristretto, and curve25519-dalek.
@@ -68,7 +77,6 @@ Secure key storage needs to be solved, but not right away.
 
 
 == Scratch
-
 
 Can we build an index on declarations by a particular agent?
 Do we have timestamps on declarations?
@@ -80,7 +88,6 @@ state is:
     money
     agreement/contract
 
-
 Network Discovery
     How do we discover the network?
     source code, signed by authors, has some node urls hardcoded
@@ -90,8 +97,6 @@ Network Discovery
         There is a shared datum which is the member graph.
         I can unilaterally declare that I trust someone, and publish that
         information.
-        Trust is tracked. You have ten trust tokens to distribute. The
-        number ten is the maximum network fanout.
 
 Network Integrity
     attestation to prove same codebase
@@ -103,3 +108,5 @@ Data Structures
 each user's interface is a full node
 
 node, beacon, relay
+
+

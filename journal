@@ -2,9 +2,20 @@
 
 design notes
 choosing libraries
+x Represent our test graph
 
-- Represent our test graph
+
+2024-04-17
+
+$ gh repo create --public social-trust-graph
+$ git remote add origin git@github.com:christian-oudard/social-trust-graph.git
+$ git push --set-upstream origin main
+
+
+
 
 - Implement Bron-Kerbosch clique finding for petgraph
     https://github.com/petgraph/petgraph/pull/72
+
+
 

@@ -11,9 +11,25 @@ $ gh repo create --public social-trust-graph
 $ git remote add origin git@github.com:christian-oudard/social-trust-graph.git
 $ git push --set-upstream origin main
 
+remove png file
+$ yay bfg
+$ gh repo clone christian-oudard/social-trust-graph -- --mirror
+$ bfg -D output.png social-trust-graph.git
+$ cd social-trust-graph.git
+$ git reflog expire --expire=now --all && git gc --prune=now --aggressive
+$ git log --stat | grep output.png
+$ git push --force
+$ cd ..
+$ rm -rf social-trust-graph.git
 
 
+2024-11-05
 
+x write a basic graph implementation
+
+
+To-Do:
+- history tracking
 - Implement Bron-Kerbosch clique finding for petgraph
     https://github.com/petgraph/petgraph/pull/72
 

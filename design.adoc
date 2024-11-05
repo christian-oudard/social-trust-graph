@@ -3,15 +3,22 @@
 Graph based declaration of trust or distrust. We use cryptographic secrecy to
 maintain confidentiality, discretion, and dignity.
 
-A trusts B
-    A → B
-B acknowledges A's trust
-    B ← A
-They declare their mutual trust
+Mutual trust
     A ↔ B
     B ↔ A
+
+The handshake procedure for mutual trust is:
+    A trusts B
+        A → B
+    B acknowledges A's trust
+        B ⟻ A
+    B reciprocates
+        B → A
+    A acknowleges
+        A ⟻ B
+
 A does not trust B
-    A | B
+    A ⊥ B
 
 A clique is a K_n subgraph which all trusts each other.
 
@@ -108,5 +115,8 @@ Data Structures
 each user's interface is a full node
 
 node, beacon, relay
+
+What does voting look like? How do we hold an election, create a ballot, ensure that many people have weighed in, and
+make the whole thing transparently verifiable, unforgeable, and private?
 
 

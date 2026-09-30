@@ -265,6 +265,10 @@ sanitized(I,X) :- mode(W,warrant), content(W,A), act_name(A,disclose), act_info(
 knows(I,X)  :- learns(I,X).
 knows(I2,X) :- knows(I1,X), edge(I1,I2,_), not sanitized(I2,X).
 knows(I2,X) :- knows(I1,X), feeds(I1,I2), not sanitized(I2,X).
+% Disclosure is taint, as in information-flow control: I discloses X to Q when I knows X and
+% Q can observe I's output (with/2: a message, a response, a write to a store Q reads). It
+% over-approximates; a sanitization warranty is the precise exception. with/2 is I's own
+% conduct, whereas a feed into Q's invocation may be Q's doing (review 3, Z2).
 does(I,A) :- act_name(A,disclose), act_info(A,X), act_target(A,Q), knows(I,X), with(I,Q).
 imputed(P,X) :- knows(I,X), op(I,P).
 

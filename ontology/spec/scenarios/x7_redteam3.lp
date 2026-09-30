@@ -11,6 +11,8 @@
 %% (f) Z6c: a vendor that retrains Alice's agent steers it: a release of the vendor's own
 %%     promise by that agent is void.
 %% (g) Z7a: a security performs exactly its reparation, nothing more.
+%% (h), (i) practice review: the steerer answers; a steered acceptance does not accept.
+%% (j) practice review Q4: a retry continues the aborted attempt.
 
 principal(alice). kind(alice,person). principal(bob). kind(bob,person). principal(carol). kind(carol,person).
 principal(ven). kind(ven,org). principal(eve). kind(eve,person).
@@ -96,3 +98,8 @@ commitment(offer). mode(offer,achieve). debtor(offer,alice). creditor(offer,caro
   deadline(offer,9). recognized(offer,0).
 invocation(k2). at(k2,3). runs(k2,s2). edge(k1,k2,continue). induced(k2,alice). does(k2,acc).
 reject(detached(offer,5)).
+
+% (j) practice review Q4: a retry of an aborted request continues the aborted attempt, so a
+%     grant that follows only continue edges still covers it (no copy, no loss of authority)
+invocation(k3). at(k3,4). runs(k3,s2). edge(k2,k3,continue). does(k3,book).
+expect(acts_for(k3,book,carol)). expect(conduct_of(k3,book,carol)).

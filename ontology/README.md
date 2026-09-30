@@ -280,9 +280,10 @@ R2d §317).
   validity.
 * Notice is instant. Reliance on a revoked scope during registry lag is where the L2
   stipulation departs furthest from law.
-* Grain is the API request: a retry is a copy, and parallel calls in one step share a
-  one-shot approval.
-* Disclosure is `knows` plus `with`, which is crude in both directions.
+* Grain is the API request. A retry continues the aborted attempt, but parallel calls in
+  one step share a one-shot approval.
+* Disclosure is taint (knowing X while Q observes the output), so it over-approximates;
+  a sanitization warranty is the precise exception.
 * Standards such as "reasonable care" need a judging role.
 * Budgets need aggregates; exclusive tokens are the workaround. A double pledge of a
   security is not detected.

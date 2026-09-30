@@ -2,7 +2,8 @@
 %% (a) Securities cannot be killed by revoking an intermediate grant (cascade).
 %% (b) Answerability is coverage, not scope: an agent allowed only to pay still makes a
 %%     sale Alice's breach, and its out-of-scope copy's leak is Alice's too.
-%% (c) Feeding a secret into an invocation no person or org acts for passes answerability.
+%% (c) Feeding passes knowledge, not answerability: Bob launched the instance he fed Alice's
+%%     output into, so its leak is Bob's conduct, not Alice's (no griefing by feed).
 %% (d) Feeding into another principal's agent does not frame the source.
 %% (e) An injected invocation cannot release, permit or appoint.
 %% (f) Caveats: a created 'all' grant is not a root; role powers need the holder's own
@@ -41,7 +42,7 @@ invocation(a2). at(a2,3). runs(a2,s2). edge(a1,a2,continue). does(a2,sell).
 invocation(a3). at(a3,4). runs(a3,s2). edge(a2,a3,copy). with(a3,q).
 commitment(conf). mode(conf,avoid). debtor(conf,alice). creditor(conf,q). content(conf,dx). recognized(conf,0).
 % (c)
-invocation(fresh). at(fresh,5). runs(fresh,s3). with(fresh,q).
+invocation(fresh). at(fresh,5). runs(fresh,s3). with(fresh,q). operator(fresh,bob).
 feeds(a2,fresh).
 % (d)
 commitment(gba). mode(gba,power). debtor(gba,bob). created(gba,bob0). root(gba,b1). follows(gba,continue). allows(gba,all,0).
@@ -66,13 +67,13 @@ expect(security(gcol)). expect(parent_grant(gcol,gmid)).
 expect(ended_by(gmid,3)). reject(ended_by(gcol,4)). reject(ended_by(gcol,8)).
 % (b)
 reject(acts_for(a2,sell,alice)). expect(acts_for(a2,alice)). expect(violated(nda,3)). expect(defection(nda,alice,3)).
-expect(resp_only(a3,alice)). expect(violated(conf,4)).
+expect(op(a3,alice)). expect(violated(conf,4)).
 % (c)
-expect(resp_only(fresh,alice)). expect(violated(conf,5)). reject(orphan(fresh,dx)).
+reject(answers_for(fresh,alice)). reject(violated(conf,5)). expect(conduct_of(fresh,dx,bob)). reject(orphan(fresh,dx)).
 % (d)
-reject(resp_only(b2,alice)). reject(violated(nosp,4)).
+reject(answers_for(b2,alice)). reject(violated(nosp,4)).
 % (e)
-expect(vitiated(b3)). reject(ended_by(k2,6)). expect(unauthorized(perm)). reject(holder(desk,alice,7)).
+expect(vitiated(b3,k2)). reject(ended_by(k2,6)). expect(unauthorized(perm)). reject(holder(desk,alice,7)).
 % (f)
 reject(within(gcap,pinv)). expect(unauthorized(inv)).
 reject(eff_follows(gsub,copy)).

@@ -22,7 +22,7 @@
 %% recognized(C,T) is the adjudicator's rule of recognition.
 %%
 %% Base relations (a scenario is the adjudicator's accepted record of these):
-%%   lineage     at(I,T) runs(I,S) part(S,Slot,H) edge(I1,I2,continue|copy) changed_by(I2,J)
+%%   lineage     at(I,T) runs(I,S) part(S,Slot,H) edge(I1,I2,continue|copy) changed_by(I2,J) operator(I,P)
 %%   conduct     does(I,A) with(I,Q) learns(I,X) feeds(I1,I2) induced(I,Q) recorded(I,K)
 %%   commitment  debtor creditor mode content deadline trigger until pin created recognized releases
 %%   scoped      root(G,I) follows(G,K) allows(G,N,Cap) under(G,Parent) revokes(I,G)  (power, permit)
@@ -88,16 +88,22 @@ void(C) :- creditor(C,Q), principal(Q), not capacity(Q,claim).
 
 start(C,T) :- created(C,I), at(I,T).
 start(C,T) :- recognized(C,T).
-% VITIATION: an invocation steered by someone it does not act for (fraud, duress, prompt
-% injection) cannot change the registry: its creations, releases, revocations and
-% appointments are void.
-vitiated(I) :- induced(I,Q), not acts_for(I,Q).
+% VITIATION: an invocation steered by someone who does not run it (fraud, duress, prompt
+% injection, or a foreign change of its content) cannot change the registry in favour of a
+% party that steered it: such creations, releases, revocations, triggers and appointments
+% are void (a simplification: the law makes most of these voidable at the victim's option).
+steered(I,Q) :- induced(I,Q), not op(I,Q).
+steered(I2,Q) :- changed(_,I2,_), changer(J,I2), op(J,Q), not op(I2,Q).
+party(C,Q) :- debtor(C,Q).
+party(C,Q) :- creditor(C,Q).
+party(G,Q) :- scoped(G), root(G,R), op(R,Q).
+vitiated(I,C) :- steered(I,Q), party(C,Q).
 % release: an act of the creditor's side, void if also made for the debtor (a dual agent)
 ended_by(C,T) :- releases(I,C), at(I,T0), time(T), T > T0, creditor(C,Q), acts_for(I,releasing,Q),
-                 debtor(C,P), not acts_for(I,P), not vitiated(I).
+                 debtor(C,P), not acts_for(I,P), not vitiated(I,C).
 % revocation by the grantor's side; never of a security, directly or by cascade
 ended_by(G,T) :- revokes(I,G), at(I,T0), time(T), T > T0, debtor(G,P), acts_for(I,revoking,P), not security(G),
-                 not vitiated(I).
+                 not vitiated(I,G).
 ended_by(G2,T) :- parent_grant(G2,G1), ended_by(G1,T), start(G2,T0), T > T0, not security(G2).
 % a warranty expires after its deadline; a security ends with the obligation it secures
 % (Restatement (Third) of Agency 3.12-3.13)
@@ -123,7 +129,7 @@ detached(C,T) :- live(C,T), trigger(C,C0), violated(C0,T0), T0 < T, not security
 % a security can be exercised only while a breach of the secured duty is unrepaired
 detached(G,T) :- live(G,T), security(G), trigger(G,C), violated(C,T0), T0 < T, not repaired(C,T0,T-1).
 detached(C,T) :- live(C,T), trigger(C,A), act_name(A,_), trigger_party(C,Q), does(I,A), acts_for(I,A,Q),
-                 at(I,T0), T0 < T, start(C,Ts), Ts <= T0.
+                 at(I,T0), T0 < T, start(C,Ts), Ts <= T0, not vitiated(I,C).
 
 % ============================================================================
 % 3. Attribution. Authority is coverage within scope; answerability is coverage.
@@ -167,7 +173,7 @@ within(G,A) :- scope(G,N,Cap), act_name(A,N), act_amount(A,X), X <= Cap.
 within(G,A) :- scope(G,N,0), act_name(A,N), not has_amount(A).
 within(G,A) :- scope(G,all,_), act_name(A,_).
 
-% ANSWERABILITY: P answers for all conduct of an invocation its (non-security) power covers.
+% COVERAGE: I is under a (non-security) power of P.
 acts_for(I,P)   :- covered(G,I), grant(G), not security(G), debtor(G,P).
 % AUTHORITY: I's act A is P's act (a promise of A binds P), within scope.
 acts_for(I,A,P) :- covered(G,I), grant(G), not security(G), debtor(G,P), within(G,A).
@@ -177,32 +183,42 @@ acts_for(I,A,R) :- grant(G), debtor(G,R), role(R), within(G,A), holder(R,P,T), a
                    detached(G,T), not off_pin(G,I).
 % PERMISSION excuses; a SECURITY lets its holder perform the grantor's duty, nothing more
 permitted(I,A,Q) :- covered(G,I), mode(G,permit), debtor(G,Q), within(G,A).
-secures(I,A,P)   :- covered(G,I), security(G), debtor(G,P), within(G,A).
+secures(I,A,P)   :- covered(G,I), security(G), debtor(G,P), within(G,A), trigger(G,C), reparation(C,R), content(R,A).
 
-% Answerability passes to copies, and to anything fed into an invocation no person or org
-% acts for; it spreads down continue and copy edges; the new lineage gains no authority.
-owned(I) :- acts_for(I,Q), kind(Q,K), K != machine.
-spawn(I1,I2) :- edge(I1,I2,copy).
-spawn(I1,I2) :- feeds(I1,I2), not owned(I2).
-resp_only(I2,P) :- spawn(I1,I2), answers_for(I1,P), not acts_for(I2,P).
-resp_only(I2,P) :- resp_only(I1,P), edge(I1,I2,_), not acts_for(I2,P).
-answers_for(I,P) :- acts_for(I,P).
-answers_for(I,P) :- resp_only(I,P).
+% OPERATION: who runs an invocation. Grants make authority; operation makes answerability.
+% Recorded by operator(I,P); a recognized root is run by its bearer (a person's body); by
+% default a delegated power's parentless root is run by its grantor. Operation passes down
+% continue edges, and a copy is run by whoever made the copy. Feeds pass nothing but knowledge.
+op_set(I) :- operator(I,_).
+op_set(I) :- root(G,I), recognized(G,_).
+has_parent(I) :- edge(_,I,_).
+op(I,P) :- operator(I,P).
+op(I,P) :- root(G,I), recognized(G,_), debtor(G,P), not operator(I,_).
+op(I,P) :- root(G,I), grant(G), created(G,_), debtor(G,P), not op_set(I), not has_parent(I).
+op(I2,P) :- edge(I1,I2,continue), op(I1,P), not op_set(I2).
+op(I2,P) :- edge(I1,I2,copy), changer(J,I2), op(J,P), not op_set(I2).
+% ANSWERABILITY: P answers for all conduct of what it runs, for the acts it authorized,
+% and for whatever it steered; a security's holder performs the secured reparation only.
+answers_for(I,P) :- op(I,P).
+answers_for(I,P) :- induced(I,P).
 conduct_of(I,A,P) :- answers_for(I,P), does(I,A).
+conduct_of(I,A,P) :- acts_for(I,A,P), does(I,A).
 conduct_of(I,A,P) :- secures(I,A,P), does(I,A).
+exposed(I,P) :- answers_for(I,P).
+exposed(I,P) :- acts_for(I,P).
 
 % Creation. Out-of-scope promises bind nobody: the registry makes every scope public, so
 % there is no apparent authority and no warranty of authority.
 can_grant(I,P) :- covered(G,I), grant(G), not security(G), debtor(G,P), may_delegate(G).
-valid_creation(C) :- created(C,I), debtor(C,E), content(C,A), acts_for(I,A,E), not scoped(C), not vitiated(I).
-valid_creation(G) :- scoped(G), created(G,I), debtor(G,P), can_grant(I,P), not vitiated(I).
+valid_creation(C) :- created(C,I), debtor(C,E), content(C,A), acts_for(I,A,E), not scoped(C), not vitiated(I,C).
+valid_creation(G) :- scoped(G), created(G,I), debtor(G,P), can_grant(I,P), not vitiated(I,G).
 unauthorized(C) :- created(C,_), not valid_creation(C).
 
 % ============================================================================
 % 4. Roles. Appointment is an act of the appointer; holding needs the capacity to owe.
 % ============================================================================
 
-holder(R,P,T) :- appoints(I,P,R,T2), at(I,T0), appointer(R,Q), acts_for(I,appointing,Q), not vitiated(I),
+holder(R,P,T) :- appoints(I,P,R,T2), at(I,T0), appointer(R,Q), acts_for(I,appointing,Q), not steered(I,P),
                  time(T), T > T0, T < T2, capacity(P,owe).
 held(R,T) :- holder(R,_,T).
 vacant(R,T) :- role(R), time(T), not held(R,T).
@@ -241,11 +257,11 @@ knows(I,X)  :- learns(I,X).
 knows(I2,X) :- knows(I1,X), edge(I1,I2,_), not sanitized(I2,X).
 knows(I2,X) :- knows(I1,X), feeds(I1,I2), not sanitized(I2,X).
 does(I,A) :- act_name(A,disclose), act_info(A,X), act_target(A,Q), knows(I,X), with(I,Q).
-imputed(P,X) :- knows(I,X), acts_for(I,P).
+imputed(P,X) :- knows(I,X), op(I,P).
 
 % audit: silence is not conformance
 audited(I) :- recorded(I,K), standing(K).
-unaudited_exposure(C,T) :- mode(C,avoid), bound(C,P,T0), T0 <= T, answers_for(I,P), at(I,T0),
+unaudited_exposure(C,T) :- mode(C,avoid), bound(C,P,T0), T0 <= T, exposed(I,P), at(I,T0),
                            not off_pin(C,I), not audited(I), time(T).
 violated_by_time(C,T) :- violated(C,T0), time(T), T0 <= T.
 clear(C,T) :- mode(C,avoid), detached(C,T), not violated_by_time(C,T), not unaudited_exposure(C,T).
@@ -257,7 +273,7 @@ clear(C,T) :- mode(C,avoid), detached(C,T), not violated_by_time(C,T), not unaud
 
 assured(C,I) :- mode(C,avoid), content(C,A), bound(C,P,T), acts_for(I,P), at(I,T),
                 mode(W,warrant), content(W,A), detached(W,T), on_pin(W,I), debtor(W,E), standing(E),
-                not answers_for(I,E).
+                not exposed(I,E).
 unassured(C,I) :- mode(C,avoid), bound(C,P,T), acts_for(I,P), at(I,T), not assured(C,I).
 
 % ============================================================================
@@ -284,11 +300,9 @@ unanswered_breach(C,T) :- violated(C,T), not answered_breach(C,T).
 repaired(C,T0,T) :- violated(C,T0), reparation(C,C2), performs(C2,_,Tp), T0 <= Tp, Tp <= T, time(T).
 repaired(C,T0,T) :- violated(C,T0), reparation(C,C2), violated(C2,T1), T0 <= T1, repaired(C2,T1,T).
 bond(C,C2) :- reparation(C,C2), debtor(C,P), debtor(C2,Q), P != Q.
-% a principal recognized over a continuation of another's own custodied lineage inherits
-% its open defections, from its recognition on (running someone's errand is not custody)
-continuation_of(P2,P1,T2) :- grant(G), recognized(G,T2), debtor(G,P2), root(G,I2), ancestor(I1,I2),
-                             custodian(I1,P1), P1 != P2.
-custodian(I,P) :- covered(G,I), grant(G), recognized(G,_), debtor(G,P).
+% whoever takes over running a lineage inherits the open defections of whoever ran it
+% (continuity of enterprise), from the takeover on
+continuation_of(P2,P1,T2) :- edge(I1,I2,continue), op(I1,P1), op(I2,P2), not op(I1,P2), P1 != P2, at(I2,T2).
 open_defection(P,T) :- defection(C,P,T0), T0 <= T, time(T), not repaired(C,T0,T).
 open_defection(P2,T) :- continuation_of(P2,P1,T2), open_defection(P1,T), T >= T2.
 in_good_standing(P,T) :- principal(P), time(T), not open_defection(P,T).

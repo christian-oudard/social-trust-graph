@@ -86,12 +86,12 @@ expect(fulfilled(kach,4)). reject(violated(kach,8)).        % discharged once, b
 expect(violated(kavoid,5)). expect(violator(kavoid,d8)).    % broken by any branch
 expect(defection(kavoid,dana,5)).
 % Erin: the copy cannot bind her, but she answers for it
-reject(acts_for(e3,erin)). expect(resp_only(e3,erin)).
+reject(acts_for(e3,erin)). expect(op(e3,erin)).
 expect(unauthorized(sale3)). reject(bound(sale3,erin,4)). reject(answerer(sale3,erin)).   % a promise out of scope binds nobody
 expect(violated(kerin,2)). expect(defection(kerin,erin,2)).
 % Fay answers for her narrow agent's copy; nobody answers for the wild instance unless
 % the model itself can bear duties
-expect(resp_only(f3,fay)). reject(acts_for(f3,fay)). reject(orphan(f3,spam)).
+expect(op(f3,fay)). reject(acts_for(f3,fay)). reject(orphan(f3,spam)).
 expect(delegate, orphan(wild,spam)). reject(actor, orphan(wild,spam)). reject(party, orphan(wild,spam)).
 expect(delegate, void(gm)). reject(actor, void(gm)).
 % the machine question never displaces Dana: her valid commitments are hers under every answer

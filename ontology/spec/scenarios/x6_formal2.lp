@@ -1,7 +1,7 @@
 %% X6 (regressions from review round 2, formal, and from surviving mutants).
 %% (a) A security's holder acts only to perform: the grantor does not answer for the
 %%     holder's other conduct, and a security issued by a pinned agent is the holder's.
-%% (b) Responsibility for an unowned recipient does not spread by feeding a third party.
+%% (b) Feeding never passes answerability: the unowned recipient is nobody's but its runner's.
 %% (c) Acting in an office needs the holder's own authority for the act.
 %% (d) Being steered by one's own principal is not vitiation.
 %% (e) No self-assurance: an attester who answers for the invocation cannot assure it.
@@ -43,7 +43,7 @@ invocation(u1). at(u1,4). runs(u1,s3). feeds(a2,u1).
 commitment(gcag). mode(gcag,power). debtor(gcag,carol). created(gcag,c0). root(gcag,cx1). follows(gcag,continue). allows(gcag,all,0).
 invocation(cx1). at(cx1,2). runs(cx1,s1).
 invocation(cx2). at(cx2,6). runs(cx2,s3). edge(cx1,cx2,continue). feeds(u1,cx2).
-expect(resp_only(u1,alice)). reject(resp_only(cx2,alice)).
+reject(answers_for(u1,alice)). reject(answers_for(cx2,alice)).
 
 % (c) Alice's narrow agent may only spam; she holds a treasurer's office allowing pay 10000
 role(treasurer). appointer(treasurer,bob). appoints(bob0,alice,treasurer,12).
@@ -77,10 +77,10 @@ reject(violated(wlab2,7)). expect(violated(wlab,7)).
 
 % (g) The vendor's model once ran Alice's errand; the vendor is later recognized over it
 commitment(gerr). mode(gerr,power). debtor(gerr,alice). created(gerr,alice0). root(gerr,e1). follows(gerr,continue). allows(gerr,all,0).
-invocation(e1). at(e1,1). runs(e1,s1). does(e1,sell).
+invocation(e1). at(e1,1). runs(e1,s1). does(e1,sell). operator(e1,ven).
 invocation(e2). at(e2,4). runs(e2,s2). edge(e1,e2,continue).
 commitment(gve). mode(gve,power). debtor(gve,ven). root(gve,e2). follows(gve,continue). allows(gve,all,0). recognized(gve,4).
-expect(defection(nda,alice,1)). reject(continuation_of(ven,alice,4)). expect(in_good_standing(ven,6)).
+expect(defection(nda,alice,1)). reject(continuation_of(ven,alice,4)). expect(in_good_standing(ven,6)).   % Alice's authority, the vendor's machine
 
 % (h) The office warrants its reports: a false one is its holder's breach
 act_name(fr,false_report).

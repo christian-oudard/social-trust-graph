@@ -20,7 +20,7 @@ act_name(sr,sell_to_rival).
 commitment(conf). mode(conf,avoid). debtor(conf,erin). creditor(conf,q). content(conf,dx). created(conf,e1).
 commitment(excl). mode(excl,avoid). debtor(excl,erin). creditor(excl,q). content(excl,sr). created(excl,e1).
 does(e3,sr).
-expect(knows(e3,x)). expect(does(e3,dx)). reject(acts_for(e3,erin)). expect(resp_only(e3,erin)).
+expect(knows(e3,x)). expect(does(e3,dx)). reject(acts_for(e3,erin)). expect(op(e3,erin)).
 expect(violated(conf,3)). expect(violated(excl,3)). reject(orphan(e3,sr)).
 reject(in_good_standing(erin,5)).
 
@@ -38,7 +38,8 @@ act_name(sx,sell). act_name(py,pay).
 commitment(nda). mode(nda,avoid). debtor(nda,v1). creditor(nda,c). content(nda,sx). created(nda,a1).
 does(a2,sx).
 expect(defection(nda,v1,2)). expect(acts_for(a3,v2)). reject(acts_for(a3,v1)).
-expect(continuation_of(v2,v1,4)). reject(in_good_standing(v2,9)). expect(in_good_standing(v2,3)).   % not before it exists
+expect(continuation_of(v2,v1,4)). reject(op(a3,v1)).   % the takeover ends v1's operation
+ reject(in_good_standing(v2,9)). expect(in_good_standing(v2,3)).   % not before it exists
 % a fresh instantiation of the same weights is not a continuation
 principal(v3). kind(v3,org).
 invocation(fresh). at(fresh,4). runs(fresh,sv2).

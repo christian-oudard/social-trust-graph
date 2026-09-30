@@ -7,11 +7,16 @@
 #include "lib/world.lp".
 anc(G2,G1) :- parent_grant(G2,G1).
 anc(G3,G1) :- anc(G3,G2), parent_grant(G2,G1).
-steered(I) :- induced(I,X), not acts_for(I,X).
+% steering, restated: by a non-operator, or by the operator of a foreign content change
+ref_steer(I,Q) :- induced(I,Q), not op(I,Q).
+ref_steer(I2,Q) :- changed(_,I2,_), changer(J,I2), op(J,Q), not op(I2,Q).
+tainted_for(I,C) :- ref_steer(I,Q), debtor(C,Q).
+tainted_for(I,C) :- ref_steer(I,Q), creditor(C,Q).
+tainted_for(I,G) :- ref_steer(I,Q), scoped(G), root(G,R), op(R,Q).
 legit_end(C,T) :- releases(I,C), at(I,T0), time(T), T > T0, creditor(C,Q), acts_for(I,releasing,Q),
-                  debtor(C,P), not acts_for(I,P), not steered(I).
+                  debtor(C,P), not acts_for(I,P), not tainted_for(I,C).
 legit_end(G,T) :- revokes(I,G), at(I,T0), time(T), T > T0, debtor(G,P), acts_for(I,revoking,P),
-                  not security(G), not steered(I).
+                  not security(G), not tainted_for(I,G).
 legit_end(G,T) :- anc(G,G0), legit_end(G0,T), start(G,T0), T > T0, not security(G).
 legit_end(W,T) :- mode(W,warrant), deadline(W,D), time(T), T > D.
 legit_end(G,T) :- security(G), trigger(G,C), legit_end(C,T).

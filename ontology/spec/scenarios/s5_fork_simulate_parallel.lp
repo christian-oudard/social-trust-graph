@@ -131,6 +131,6 @@ expect(knows(o1b,y1)). reject(knows(o1s,y1)). reject(knows(o3,y1)). reject(viola
 expect(imputed(ola,y1)).                                % the principal still knows
 expect(covered(go,o3)). reject(covered(go,o1)).
 % the probe cannot bind Ola, but Ola answers for its conduct: no fork-and-disown
-reject(acts_for(probe,ola)). expect(resp_only(probe,ola)). expect(unauthorized(offp)).
+reject(acts_for(probe,ola)). expect(op(probe,ola)). expect(unauthorized(offp)).
 reject(answerer(offp,ola)).                             % its promise binds nobody
 does(probe,spam). act_name(spam,spam). expect(conduct_of(probe,spam,ola)).   % its conduct is Ola's

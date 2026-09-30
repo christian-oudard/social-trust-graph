@@ -9,7 +9,7 @@ Each property compares two evaluations of core.lp that should agree (or be order
                 content changes nothing about attribution, binding or breach
   P3 history    appending a later invocation never retracts a past fact (no retroactivity)
   P4 fork law   adding a copy that breaks a prohibition creates a breach iff the debtor
-                answers for the copy (a power covers it, or covered the original)
+                answers for the copy's act (runs it, steered it, or authorized the act)
 """
 import random
 import sys
@@ -179,19 +179,24 @@ def p3_history(rng):
 
 
 def p4_fork_law(rng):
-    w = good_world(rng, pins=False, learning=False)
-    # a prohibition on q by p, broken only by a fresh copy of i1
-    n = w.n + 1
-    # grants that allow 'spam' make the copy's act attributable in about half the worlds
-    w.lines.append("commitment(kz). mode(kz,avoid). debtor(kz,p). creditor(kz,q). content(kz,sp). recognized(kz,0).")
-    if rng.random() < 0.5:   # half the time p covers the original, so answers for its copy
-        follow = " follows(dz,copy)." if rng.random() < 0.5 else ""
-        w.lines.append(f"commitment(dz). mode(dz,power). debtor(dz,p). created(dz,p0). root(dz,i1). allows(dz,spam,0). under(dz,gp).{follow}")
-    w.lines.append(f"invocation(i{n}). at(i{n},{n}). edge(i1,i{n},copy). does(i{n},sp).")
-    w.runs[n] = w.runs[1].split("_")[0] + f"_{n}"
-    atoms = evaluate(w.facts())
-    answered_by_p = f"answers_for(i{n},p)" in atoms and f"excused(kz,i{n})" not in atoms
-    assert (f"violated(kz,{n})" in atoms) == answered_by_p, "fork law: breach iff p answers for the copy"
+    while True:
+        w = good_world(rng, pins=False, learning=False)
+        # a prohibition on p owed to q, broken only by a fresh copy of i1
+        n = w.n + 1
+        w.lines.append("commitment(kz). mode(kz,avoid). debtor(kz,p). creditor(kz,q). content(kz,sp). recognized(kz,0).")
+        if rng.random() < 0.5:   # half the time p covers the original
+            follow = " follows(dz,copy)." if rng.random() < 0.5 else ""
+            w.lines.append(f"commitment(dz). mode(dz,power). debtor(dz,p). created(dz,p0). root(dz,i1). allows(dz,spam,0). under(dz,gp).{follow}")
+        w.lines.append(f"invocation(i{n}). at(i{n},{n}). edge(i1,i{n},copy). does(i{n},sp).")
+        w.runs[n] = w.runs[1].split("_")[0] + f"_{n}"
+        try:
+            atoms = evaluate(w.facts())
+            break
+        except AssertionError:
+            continue
+    answered_by_p = f"answers_for(i{n},p)" in atoms or f"acts_for(i{n},sp,p)" in atoms
+    answered_by_p = answered_by_p and f"excused(kz,i{n})" not in atoms
+    assert (f"violated(kz,{n})" in atoms) == answered_by_p, "fork law: breach iff p answers for the copy's act"
     return answered_by_p
 
 

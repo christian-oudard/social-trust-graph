@@ -30,6 +30,7 @@ ekind(continue;copy).
 { learns(i(X),x) : ix(X) } 1.
 { with(i(X),q) } :- ix(X).
 { induced(i(X),P) : tp(P) } 1 :- ix(X).
+{ operator(i(X),P) : principal(P) } 1 :- ix(X).
 act_name(dq,disclose). act_info(dq,x). act_target(dq,q).
 
 % delegated instruments: powers and permits, possibly conditional, possibly securities

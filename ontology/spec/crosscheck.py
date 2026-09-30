@@ -105,11 +105,11 @@ def main(argv):
                     n += 1
     if "--random" in argv:
         sys.path.insert(0, str(HERE))
-        from props import World
+        from props import good_world
         k = int(argv[argv.index("--random") + 1])
         rng = random.Random(3)
         for t in range(k):
-            w = World(rng)
+            w = good_world(rng)
             facts = w.facts()
             js = export(facts_text=facts)
             for hyp in HYPS:

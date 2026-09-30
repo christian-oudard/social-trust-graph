@@ -72,6 +72,11 @@ type_error(55,"feeds run forward in time") :- feeds(I1,I2), at(I1,T1), at(I2,T2)
 type_error(61,"ambiguous delegation: cite the parent with under/2") :- candidate_parent(G,G1), candidate_parent(G,G3), G1 < G3, not cites(G).
 type_error(62,"under/2 must cite a candidate parent") :- under(G,G1), not candidate_parent(G,G1).
 type_error(63,"a commitment is created once") :- created(C,I1), created(C,I2), I1 != I2.
+type_error(64,"a power's pin must be observable: scope is public only if it can be checked") :- grant(G), pin(G,_,_,opaque(_)).
+type_error(65,"a security performs its reparation; it takes no resolutive condition") :- security(G), until(G,_).
+type_error(66,"operator(I,P): P must be a principal") :- operator(_,P), not principal(P).
+contested(I) :- root(G1,I), root(G2,I), grant(G1), grant(G2), debtor(G1,P1), debtor(G2,P2), P1 != P2.
+type_error(67,"powers of several principals share a root: record its operator") :- contested(I), not op_set(I), not has_parent(I).
 type_error(51,"pin/3 with two hashes for one slot: use pin/4 configurations") :- pin(C,Sl,H1), pin(C,Sl,H2), H1 != H2.
 
 % retired v0.1 vocabulary, flagged so old scenarios fail loudly

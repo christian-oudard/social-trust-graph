@@ -30,15 +30,15 @@ ascent! {
     relation content(S, S); relation deadline(S, i64); relation pin4(S, S, S, S); relation trigger(S, S);
     relation until(S, S); relation created(S, S); relation recognized(S, i64); relation releases(S, S);
     relation revokes(S, S); relation root(S, S); relation follows(S, S); relation allows(S, S, i64);
-    relation under(S, S); relation appointer(S, S); relation appoints(S, S, S, i64);
+    relation under(S, S); relation appointer(S, S); relation appoints(S, S, S, i64); relation operator(S, S);
 
     // ---------------- history from earlier steps ----------------
     relation parent_grant_h(S, S); relation valid_creation_h(S); relation scope_h(S, S, i64);
     relation violated_h(S, i64); relation performs_h(S, S, i64); relation acts_for3_h(S, S, S);
-    relation acts_for2_h(S, S); relation answers_for_h(S, S); relation resp_only_h(S, S);
+    relation acts_for2_h(S, S);
     relation defection_h(S, S, i64); relation unaudited_exposure_h(S, i64); relation knows_h(S, S);
     relation disclose_h(S, S); relation conduct_of_h(S, S, S); relation live_h(S, i64);
-    relation vitiated_h(S); relation repaired_h(S, i64, i64); relation custodian_h(S, S);
+    relation repaired_h(S, i64, i64);
     relation holder_h(S, S, i64); relation fulfilled_h(S, i64);
 
     // ================= 0. capacities =================
@@ -89,9 +89,9 @@ ascent! {
     does_past(i, a) <-- does_static(i, a);
     does_past(i, a) <-- disclose_h(i, a);
     ended_by(c, t) <-- now(t), releases(i, c), at(i, t0), if t > t0, creditor(c, q), acts_for3_h(i, "releasing", q),
-                       debtor(c, p), !acts_for2_h(i, p), !vitiated_h(i);
+                       debtor(c, p), !acts_for2_h(i, p), !vitiated(i, c);
     ended_by(g, t) <-- now(t), revokes(i, g), at(i, t0), if t > t0, debtor(g, p), acts_for3_h(i, "revoking", p),
-                       !security(g), !vitiated_h(i);
+                       !security(g), !vitiated(i, g);
     ended_by(g2, t) <-- parent_grant_h(g2, g1), ended_by(g1, t), start(g2, t0), if t > t0, !security(g2);
     ended_by(w, t) <-- now(t), mode(w, m), if *m == "warrant", deadline(w, d), if t > d;
     ended_by(g, t) <-- security(g), trigger(g, c), ended_by(c, t);
@@ -99,7 +99,7 @@ ascent! {
     ended_by(c, t) <-- now(t), until(c, a), does_past(i, a), at(i, t0), if t > t0, in_range(c, i);
     relation in_range(S, S);
     in_range(c, i) <-- scoped(c), in_lineage(c, i);
-    in_range(c, i) <-- commitment(c), !scoped(c), debtor(c, p), answers_for_h(i, p);
+    in_range(c, i) <-- commitment(c), !scoped(c), debtor(c, p), answers_for(i, p);
     live(c, t) <-- now(t), recognized(c, t0), if t >= t0, !ended_by(c, t), !void(c);
     live(c, t) <-- now(t), created(c, i), at(i, t0), if t > t0, valid_creation_h(c), !ended_by(c, t), !void(c);
 
@@ -111,14 +111,14 @@ ascent! {
     detached(c, t) <-- live(c, t), trigger(c, c0), violated_h(c0, t0), if t0 < t, !security(c);
     detached(g, t) <-- live(g, t), security(g), trigger(g, c), violated_h(c, t0), if t0 < t, !repaired_h(c, t0, t - 1);
     detached(c, t) <-- live(c, t), trigger(c, a), act_name(a, _), trigger_party(c, q), does_past(i, a),
-                       acts_for3_h(i, a, q), at(i, t0), if t0 < t, start(c, ts), if ts <= t0;
+                       acts_for3_h(i, a, q), at(i, t0), if t0 < t, start(c, ts), if ts <= t0, !vitiated(i, c);
 
     // ================= 3. attribution =================
-    relation in_lineage(S, S); relation eff_follows(S, S); relation has_parent(S);
-    has_parent(g) <-- parent_grant_h(g, _);
+    relation in_lineage(S, S); relation eff_follows(S, S); relation grant_has_parent(S);
+    grant_has_parent(g) <-- parent_grant_h(g, _);
     in_lineage(g, i) <-- scoped(g), root(g, i);
     in_lineage(g, i2) <-- in_lineage(g, i1), edge(i1, i2, k), eff_follows(g, k);
-    eff_follows(g, k) <-- follows(g, k), !has_parent(g);
+    eff_follows(g, k) <-- follows(g, k), !grant_has_parent(g);
     eff_follows(g2, k) <-- follows(g2, k), parent_grant_h(g2, g1), eff_follows(g1, k);
     eff_follows(g2, k) <-- follows(g2, k), parent_grant_h(g2, g1), recognized(g1, _), allows(g1, all, _), if *all == "all";
 
@@ -158,31 +158,51 @@ ascent! {
     acts_for3(i, a, r) <-- grant(g), debtor(g, r), role(r), within(g, a), holder(r, p, t), now(t), at(i, t),
                            acts_for3(i, a, p), detached(g, t), !off_pin(g, i);
     permitted(i, a, q) <-- covered(g, i), mode(g, m), if *m == "permit", debtor(g, q), within(g, a);
-    secures(i, a, p) <-- covered(g, i), security(g), debtor(g, p), within(g, a);
+    secures(i, a, p) <-- covered(g, i), security(g), debtor(g, p), within(g, a), trigger(g, c), reparation(c, r),
+                         content(r, a);
 
-    relation owned(S); relation resp_only(S, S); relation answers_for(S, S); relation conduct_of(S, S, S);
-    owned(i) <-- acts_for2(i, q), kind(q, k), if *k != "machine";
-    resp_only(i2, p) <-- now(t), at(i2, t), edge(i1, i2, k), if *k == "copy", answers_for_h(i1, p), !acts_for2(i2, p);
-    resp_only(i2, p) <-- now(t), at(i2, t), feeds(i1, i2), !owned(i2), answers_for_h(i1, p), !acts_for2(i2, p);
-    resp_only(i2, p) <-- now(t), at(i2, t), resp_only_h(i1, p), edge(i1, i2, _), !acts_for2(i2, p);
-    answers_for(i, p) <-- acts_for2(i, p);
-    answers_for(i, p) <-- resp_only(i, p);
+    // operation (static): who runs an invocation
+    relation op_set(S); relation has_parent(S); relation op(S, S);
+    relation answers_for(S, S); relation conduct_of(S, S, S); relation exposed(S, S);
+    op_set(i) <-- operator(i, _);
+    op_set(i) <-- root(g, i), recognized(g, _);
+    has_parent(i) <-- edge(_, i, _);
+    relation has_operator(S);
+    has_operator(i) <-- operator(i, _);
+    op(i, p) <-- operator(i, p);
+    op(i, p) <-- root(g, i), recognized(g, _), debtor(g, p), !has_operator(i);
+    op(i, p) <-- root(g, i), grant(g), created(g, _), debtor(g, p), !op_set(i), !has_parent(i);
+    op(i2, p) <-- edge(i1, i2, k), if *k == "continue", op(i1, p), !op_set(i2);
+    op(i2, p) <-- edge(_, i2, k), if *k == "copy", changer(j, i2), op(j, p), !op_set(i2);
+    answers_for(i, p) <-- op(i, p);
+    answers_for(i, p) <-- induced(i, p);
     conduct_of(i, a, p) <-- answers_for(i, p), does(i, a);
+    conduct_of(i, a, p) <-- acts_for3(i, a, p), does(i, a);
     conduct_of(i, a, p) <-- secures(i, a, p), does(i, a);
+    exposed(i, p) <-- answers_for(i, p);
+    exposed(i, p) <-- acts_for2(i, p);
 
-    relation vitiated(S); relation can_grant(S, S); relation valid_creation(S); relation unauthorized(S);
-    vitiated(i) <-- now(t), at(i, t), induced(i, q), !acts_for2(i, q);
+    // vitiation (static)
+    relation steered(S, S); relation party(S, S); relation vitiated(S, S);
+    steered(i, q) <-- induced(i, q), !op(i, q);
+    steered(i2, q) <-- changed(_, i2, _), changer(j, i2), op(j, q), !op(i2, q);
+    party(c, q) <-- debtor(c, q);
+    party(c, q) <-- creditor(c, q);
+    party(g, q) <-- scoped(g), root(g, r), op(r, q);
+    vitiated(i, c) <-- steered(i, q), party(c, q);
+
+    relation can_grant(S, S); relation valid_creation(S); relation unauthorized(S);
     can_grant(i, p) <-- covered(g, i), grant(g), !security(g), debtor(g, p), may_delegate(g);
     valid_creation(c) <-- now(t), created(c, i), at(i, t), debtor(c, e), content(c, a), acts_for3(i, a, e),
-                          !scoped(c), !vitiated(i);
-    valid_creation(g) <-- now(t), scoped(g), created(g, i), at(i, t), debtor(g, p), can_grant(i, p), !vitiated(i);
+                          !scoped(c), !vitiated(i, c);
+    valid_creation(g) <-- now(t), scoped(g), created(g, i), at(i, t), debtor(g, p), can_grant(i, p), !vitiated(i, g);
     unauthorized(c) <-- now(t), created(c, i), at(i, t), !valid_creation(c);
 
     // ================= 4. roles and binding =================
     relation holder(S, S, i64); relation held(S, i64); relation vacant(S, i64); relation bound(S, S, i64);
     relation charter(S, S);
     holder(r, p, t) <-- now(t), appoints(i, p, r, t2), at(i, t0), appointer(r, q), acts_for3_h(i, "appointing", q),
-                        !vitiated_h(i), if t > t0 && t < t2, capacity(p, "owe");
+                        !steered(i, p), if t > t0 && t < t2, capacity(p, "owe");
     held(r, t) <-- holder(r, _, t);
     vacant(r, t) <-- now(t), role(r), !held(r, t);
     bound(c, p, t) <-- detached(c, t), debtor(c, p), principal(p), !scoped(c);
@@ -221,7 +241,7 @@ ascent! {
     relation audited(S); relation unaudited_exposure(S, i64); relation violated_by_time(S, i64); relation clear(S, i64);
     audited(i) <-- recorded(i, k), standing(k);
     unaudited_exposure(c, t) <-- now(t), unaudited_exposure_h(c, _);
-    unaudited_exposure(c, t) <-- now(t), mode(c, m), if *m == "avoid", bound(c, p, t), answers_for(i, p), at(i, t),
+    unaudited_exposure(c, t) <-- now(t), mode(c, m), if *m == "avoid", bound(c, p, t), exposed(i, p), at(i, t),
                                  !off_pin(c, i), !audited(i);
     violated_by_time(c, t) <-- violated(c, t);
     violated_by_time(c, t) <-- now(t), violated_h(c, _);
@@ -231,13 +251,13 @@ ascent! {
     relation assured(S, S); relation unassured(S, S);
     assured(c, i) <-- mode(c, m), if *m == "avoid", content(c, a), bound(c, p, t), acts_for2(i, p), at(i, t),
                       mode(w, mw), if *mw == "warrant", content(w, a), detached(w, t), on_pin(w, i), debtor(w, e),
-                      standing(e), !answers_for(i, e);
+                      standing(e), !exposed(i, e);
     unassured(c, i) <-- mode(c, m), if *m == "avoid", bound(c, p, t), acts_for2(i, p), at(i, t), !assured(c, i);
 
     // ================= 7. answerability, defection, repair, succession =================
     relation valid_creation_all(S); relation defection_all(S, S, i64); relation violated_all(S, i64);
     relation performs_all(S, S, i64); relation conduct_of_all(S, S, S); relation live_all(S, i64);
-    relation holder_all(S, S, i64); relation custodian(S, S); relation custodian_all(S, S);
+    relation holder_all(S, S, i64);
     valid_creation_all(c) <-- valid_creation(c); valid_creation_all(c) <-- valid_creation_h(c);
     defection_all(c, p, t) <-- defection(c, p, t); defection_all(c, p, t) <-- defection_h(c, p, t);
     violated_all(c, t) <-- violated(c, t); violated_all(c, t) <-- violated_h(c, t);
@@ -245,8 +265,6 @@ ascent! {
     conduct_of_all(i, a, p) <-- conduct_of(i, a, p); conduct_of_all(i, a, p) <-- conduct_of_h(i, a, p);
     live_all(c, t) <-- live(c, t); live_all(c, t) <-- live_h(c, t);
     holder_all(r, p, t) <-- holder(r, p, t); holder_all(r, p, t) <-- holder_h(r, p, t);
-    custodian(i, p) <-- covered(g, i), grant(g), recognized(g, _), debtor(g, p);
-    custodian_all(i, p) <-- custodian(i, p); custodian_all(i, p) <-- custodian_h(i, p);
 
     relation in_force(S); relation answerer(S, S); relation answered(S, S); relation orphan(S, S);
     relation secured(S); relation unanswerable(S);
@@ -275,8 +293,8 @@ ascent! {
     repaired(c, t0, t) <-- violated_all(c, t0), reparation(c, c2), violated_all(c2, t1), if t0 <= t1, repaired(c2, t1, t);
     repaired_all(c, t0, t) <-- repaired(c, t0, t); repaired_all(c, t0, t) <-- repaired_h(c, t0, t);
     bond(c, c2) <-- reparation(c, c2), debtor(c, p), debtor(c2, q), if p != q;
-    continuation_of(p2, p1, t2) <-- grant(g), recognized(g, t2), debtor(g, p2), root(g, i2), ancestor(i1, i2),
-                                    custodian_all(i1, p1), if p1 != p2;
+    continuation_of(p2, p1, t2) <-- edge(i1, i2, k), if *k == "continue", op(i1, p1), op(i2, p2), !op(i1, p2),
+                                    if p1 != p2, at(i2, t2);
     open_defection(p, t) <-- now(t), defection_all(c, p, t0), if t0 <= t, !repaired(c, t0, t);
     open_defection(p2, t) <-- continuation_of(p2, p1, t2), open_defection(p1, t), if t >= t2;
     in_good_standing(p, t) <-- now(t), principal(p), !open_defection(p, t);
@@ -327,8 +345,8 @@ fn main() {
         p.now = vec![(t,)];
         macro_rules! feed { ($($h:ident),*) => { $( p.$h = hist.$h.clone(); )* } }
         feed!(parent_grant_h, valid_creation_h, scope_h, violated_h, performs_h, acts_for3_h, acts_for2_h,
-              answers_for_h, resp_only_h, defection_h, unaudited_exposure_h, knows_h, disclose_h, conduct_of_h,
-              live_h, vitiated_h, repaired_h, custodian_h, holder_h, fulfilled_h);
+              defection_h, unaudited_exposure_h, knows_h, disclose_h, conduct_of_h,
+              live_h, repaired_h, holder_h, fulfilled_h);
         p.run();
         extend(&mut hist.parent_grant_h, &p.parent_grant);
         extend(&mut hist.valid_creation_h, &p.valid_creation);
@@ -337,17 +355,13 @@ fn main() {
         extend(&mut hist.performs_h, &p.performs);
         extend(&mut hist.acts_for3_h, &p.acts_for3);
         extend(&mut hist.acts_for2_h, &p.acts_for2);
-        extend(&mut hist.answers_for_h, &p.answers_for);
-        extend(&mut hist.resp_only_h, &p.resp_only);
         extend(&mut hist.defection_h, &p.defection);
         extend(&mut hist.unaudited_exposure_h, &p.unaudited_exposure);
         extend(&mut hist.knows_h, &p.knows);
         extend(&mut hist.disclose_h, &p.disclose);
         extend(&mut hist.conduct_of_h, &p.conduct_of);
         extend(&mut hist.live_h, &p.live);
-        extend(&mut hist.vitiated_h, &p.vitiated);
         extend(&mut hist.repaired_h, &p.repaired);
-        extend(&mut hist.custodian_h, &p.custodian);
         extend(&mut hist.holder_h, &p.holder);
         extend(&mut hist.fulfilled_h, &p.fulfilled);
         emit_step(&p, &mut out);
@@ -388,10 +402,9 @@ fn emit_step(p: &Core, out: &mut BTreeSet<String>) {
     put!(out, "acts_for", p.acts_for3, |a, b, c|);
     put!(out, "permitted", p.permitted, |a, b, c|);
     put!(out, "secures", p.secures, |a, b, c|);
-    put!(out, "resp_only", p.resp_only, |a, b|);
-    put!(out, "answers_for", p.answers_for, |a, b|);
+
     put!(out, "conduct_of", p.conduct_of, |a, b, c|);
-    put!(out, "vitiated", p.vitiated, |a|);
+
     put!(out, "valid_creation", p.valid_creation, |a|);
     put!(out, "unauthorized", p.unauthorized, |a|);
     put!(out, "parent_grant", p.parent_grant, |a, b|);
@@ -416,7 +429,8 @@ fn emit_step(p: &Core, out: &mut BTreeSet<String>) {
     put!(out, "repaired", p.repaired, |a, b, c|);
     put!(out, "open_defection", p.open_defection, |a, b|);
     put!(out, "in_good_standing", p.in_good_standing, |a, b|);
-    put!(out, "custodian", p.custodian, |a, b|);
+    put!(out, "exposed", p.exposed, |a, b|);
+
 }
 
 /// Static relations and answerability, read once from the last step.
@@ -451,11 +465,13 @@ fn emit_final(p: &Core, out: &mut BTreeSet<String>) {
     put!(out, "unanswered_breach", p.unanswered_breach, |a, b|);
     put!(out, "bond", p.bond, |a, b|);
     put!(out, "continuation_of", p.continuation_of, |a, b, c|);
-    // knowledge imputed to principals is sticky: read over every step
-    let mut acts2: Vec<(S, S)> = p.acts_for2_h.clone();
-    acts2.extend(p.acts_for2.iter().cloned());
+    put!(out, "op", p.op, |a, b|);
+    put!(out, "answers_for", p.answers_for, |a, b|);
+    put!(out, "steered", p.steered, |a, b|);
+    put!(out, "vitiated", p.vitiated, |a, b|);
+    // knowledge imputed to whoever runs the invocation that knows it: read over every step
     for (i, x) in p.knows_h.iter().chain(p.knows.iter()) {
-        for (j, pr) in acts2.iter() {
+        for (j, pr) in p.op.iter() {
             if i == j {
                 out.insert(format!("imputed({pr},{x})"));
             }
@@ -528,6 +544,7 @@ fn load(p: &mut Core, facts: &[(String, Vec<V>)], hz: i64, hyp: S) {
             "under" => p.under.push((s(&a[0]), s(&a[1]))),
             "appointer" => p.appointer.push((s(&a[0]), s(&a[1]))),
             "appoints" => p.appoints.push((s(&a[0]), s(&a[1]), s(&a[2]), n(&a[3]))),
+            "operator" => p.operator.push((s(&a[0]), s(&a[1]))),
             _ => {} // substrate/1, expect/reject and other markers carry no rules here
         }
     }

@@ -22,6 +22,8 @@ commitment(gb). mode(gb,power). debtor(gb,bob).   root(gb,bob0).   follows(gb,co
 commitment(gi). mode(gi,power). debtor(gi,ins).   root(gi,ins0).   follows(gi,continue). allows(gi,all,0). recognized(gi,0).
 
 invocation(alice0). at(alice0,0). runs(alice0,body_alice).
+invocation(alice1). at(alice1,5). runs(alice1,body_alice). edge(alice0,alice1,continue).
+revokes(alice1,gcol).     % after the breach Alice changes her mind: no effect on a security
 invocation(bob0).   at(bob0,0).   runs(bob0,body_bob).
 invocation(bobm).   at(bobm,2).   runs(bobm,body_bob). edge(bob0,bobm,continue).
 invocation(bob1).   at(bob1,6).   runs(bob1,body_bob). edge(bobm,bob1,continue).
@@ -74,6 +76,7 @@ reject(violated(wlab,4)).
 expect(bond(nda,bnd)). reject(bond(nda,rep)). expect(collateral(nda,gcol)).
 reject(detached(rep,4)). expect(detached(rep,5)).           % reparation detaches the step after breach
 reject(covered(gcol,bobm)). expect(covered(gcol,bob1)).      % the power sleeps until the breach
+expect(security(gcol)). reject(ended_by(gcol,6)).
 expect(fulfilled(rep,6)).                                   % Bob executes Alice's reparation himself
 expect(repaired(nda,4,6)). reject(violated(rep,8)).
 expect(in_good_standing(alice,7)). reject(in_good_standing(alice,5)).

@@ -95,7 +95,10 @@ void(C) :- scoped(C), created(C,_), debtor(C,P), principal(P), not capacity(P,em
 void(C) :- creditor(C,Q), principal(Q), not capacity(Q,claim).
 
 ended_by(C,T) :- releases(I,C), at(I,T0), creditor(C,Q), acts_for(I,releasing,Q), time(T), T > T0.
-ended_by(G,T) :- revokes(I,G), at(I,T0), debtor(G,P), acts_for(I,revoking,P), time(T), T > T0.
+ended_by(G,T) :- revokes(I,G), at(I,T0), debtor(G,P), acts_for(I,revoking,P), time(T), T > T0, not security(G).
+% a power given as security (conditional on the grantor's own breach) is irrevocable by the
+% grantor: the grantor's later self cannot take it back (Restatement (Third) of Agency 3.12)
+security(G) :- grant(G), trigger(G,C), commitment(C), debtor(G,P), debtor(C,P).
 % revocation cascades down sub-delegation
 ended_by(G2,T) :- parent_grant(G2,G1), ended_by(G1,T), created(G2,I), at(I,T0), T > T0.
 % warranties expire after their deadline

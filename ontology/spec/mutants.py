@@ -29,10 +29,11 @@ MUTANTS = [
     # endings
     ("anyone may release", "ended_by(C,T) :- releases(I,C), at(I,T0), creditor(C,Q), acts_for(I,releasing,Q), time(T), T > T0.",
      "ended_by(C,T) :- releases(I,C), at(I,T0), time(T), T > T0."),
-    ("anyone may revoke", "ended_by(G,T) :- revokes(I,G), at(I,T0), debtor(G,P), acts_for(I,revoking,P), time(T), T > T0.",
-     "ended_by(G,T) :- revokes(I,G), at(I,T0), time(T), T > T0."),
+    ("anyone may revoke", "ended_by(G,T) :- revokes(I,G), at(I,T0), debtor(G,P), acts_for(I,revoking,P), time(T), T > T0, not security(G).",
+     "ended_by(G,T) :- revokes(I,G), at(I,T0), time(T), T > T0, not security(G)."),
     ("release takes effect at once", "ended_by(C,T) :- releases(I,C), at(I,T0), creditor(C,Q), acts_for(I,releasing,Q), time(T), T > T0.",
      "ended_by(C,T) :- releases(I,C), at(I,T0), creditor(C,Q), acts_for(I,releasing,Q), time(T), T >= T0."),
+    ("securities revocable", "time(T), T > T0, not security(G).", "time(T), T > T0."),
     ("no revocation cascade", "ended_by(G2,T) :- parent_grant(G2,G1), ended_by(G1,T), created(G2,I), at(I,T0), T > T0.", ""),
     ("warranties never expire", "ended_by(W,T) :- mode(W,warrant), deadline(W,D), time(T), T > D.", ""),
     ("live at creation step", "live(C,T) :- created(C,I), at(I,T0), valid_creation(C), time(T), T > T0, not ended_by(C,T), not void(C).",

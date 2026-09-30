@@ -86,7 +86,10 @@ ascent! {
 
     relation ended_by(S, i64); relation live(S, i64);
     ended_by(c, t) <-- now(t), releases(i, c), at(i, t0), if t > t0, creditor(c, q), acts_for3_h(i, "releasing", q);
-    ended_by(g, t) <-- now(t), revokes(i, g), at(i, t0), if t > t0, debtor(g, p), acts_for3_h(i, "revoking", p);
+    ended_by(g, t) <-- now(t), revokes(i, g), at(i, t0), if t > t0, debtor(g, p), acts_for3_h(i, "revoking", p),
+                       !security(g);
+    relation security(S);
+    security(g) <-- grant(g), trigger(g, c), commitment(c), debtor(g, p), debtor(c, p);
     ended_by(g2, t) <-- parent_grant_h(g2, g1), ended_by(g1, t), created(g2, i), at(i, t0), if t > t0;
     ended_by(w, t) <-- now(t), mode(w, m), if *m == "warrant", deadline(w, d), if t > d;
     live(c, t) <-- now(t), recognized(c, t0), if t >= t0, !ended_by(c, t), !void(c);
@@ -458,6 +461,7 @@ fn emit_final(p: &Core, out: &mut BTreeSet<String>) {
     put!(out, "unanswered_breach", p.unanswered_breach, |a, b|);
     put!(out, "bond", p.bond, |a, b|);
     put!(out, "collateral", p.collateral, |a, b|);
+    put!(out, "security", p.security, |a|);
     put!(out, "continuation_of", p.continuation_of, |a, b|);
     // knowledge imputed to principals is sticky: read over every step
     for (i, x) in p.knows_h.iter().chain(p.knows.iter()) {

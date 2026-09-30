@@ -61,3 +61,4 @@ reject(in_good_standing(alice,8)).
 expect(in_good_standing(alice,7)).
 % answerability does not depend on the machine question: Alice is a person
 reject(unanswerable(nda)).
+reject(bond(nda,rep)).   % Alice's own reparation is not drift-invariant

@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""Metamorphic property tests over random worlds larger than the exhaustive bounds.
+
+Each property compares two evaluations of core.lp that should agree (or be ordered):
+  P1 standing   settling the party-vs-delegate question changes who answers, never what
+                binds, what is violated, or who defected
+  P2 content    with no pins and no learning, re-sampling every invocation's substrate
+                content changes nothing about attribution, binding or breach
+  P3 history    appending a later invocation never retracts a past fact (no retroactivity)
+  P4 fork law   adding a copy that breaks a prohibition creates a breach iff the copy is
+                covered by a grant of the debtor whose scope includes the act
+"""
+import random
+import sys
+from pathlib import Path
+import clingo
+
+HERE = Path(__file__).parent
+FILES = [HERE / "core.lp", HERE / "types.lp"]
+WATCH = ("acts_for", "valid_creation", "bound", "violated", "defection", "live", "covered")
+
+
+def evaluate(facts, hyp=False):
+    ctl = clingo.Control(["--warn=none", "-c", "horizon=10"])
+    for f in FILES:
+        ctl.load(str(f))
+    ctl.add("base", [], facts + ("hyp(machine_party)." if hyp else ""))
+    ctl.ground([("base", [])])
+    out = []
+    ctl.solve(on_model=lambda m: out.append({str(a) for a in m.symbols(atoms=True)}))
+    assert len(out) == 1, f"expected one model, got {len(out)}"
+    errs = [a for a in out[0] if a.startswith("type_error")]
+    assert not errs, errs
+    return out[0]
+
+
+def pick(atoms, names):
+    return {a for a in atoms if a.split("(")[0] in names}
+
+
+class World:
+    """A random world: persons p,q, machine m, lineage over invocations i1..iN."""
+
+    def __init__(self, rng, n=6, grants=3, commits=4, pins=True, learning=True):
+        self.rng, self.n = rng, n
+        self.lines, self.runs = [], {}
+        L = self.lines.append
+        for P, K in (("p", "person"), ("q", "person"), ("m", "machine")):
+            L(f"principal({P}). kind({P},{K}).")
+        for P in ("p", "q"):
+            L(f"substrate(body_{P}). part(body_{P},self,opaque). invocation({P}0). at({P}0,0). runs({P}0,body_{P}).")
+            L(f"commitment(g{P}). mode(g{P},power). debtor(g{P},{P}). root(g{P},{P}0). follows(g{P},continue). allows(g{P},all,0). founded(g{P},0).")
+        for w in (1, 2):
+            for mm in (1, 2):
+                L(f"substrate(s{w}{mm}). part(s{w}{mm},weights,w{w}). part(s{w}{mm},memory,m{mm}).")
+        if rng.random() < 0.5:
+            L("commitment(gm). mode(gm,power). debtor(gm,m). root(gm,i1). follows(gm,continue). follows(gm,copy). follows(gm,merge). allows(gm,all,0). founded(gm,0).")
+        self.edges = []
+        cont_used = set()
+        for y in range(1, n + 1):
+            L(f"invocation(i{y}). at(i{y},{y}).")
+            self.runs[y] = f"s{rng.randint(1,2)}{rng.randint(1,2)}"
+            if y > 1:
+                for x in rng.sample(range(1, y), k=min(y - 1, rng.choice([1, 1, 2]))):
+                    kind = rng.choice(["continue", "copy", "merge"])
+                    if kind == "continue" and x in cont_used:
+                        kind = "copy"
+                    if kind == "continue":
+                        cont_used.add(x)
+                    self.edges.append((x, y, kind))
+        for (x, y, kind) in self.edges:
+            L(f"edge(i{x},i{y},{kind}).")
+        for a in (1, 2, 3):
+            L(f"act_name(a{a},pay). act_amount(a{a},{a}).")
+        L("act_name(sp,spam).")
+        creators = ["p0", "q0"] + [f"i{x}" for x in range(1, n + 1)]
+        for g in range(1, grants + 1):
+            P = rng.choice("pq")
+            L(f"commitment(d{g}). mode(d{g},power). debtor(d{g},{P}). created(d{g},{rng.choice(creators)}). root(d{g},i{rng.randint(1,n)}).")
+            for k in ("continue", "copy", "merge"):
+                if rng.random() < 0.6:
+                    L(f"follows(d{g},{k}).")
+            L(f"allows(d{g},pay,{rng.randint(1,3)}).")
+            if rng.random() < 0.5:
+                L(f"allows(d{g},delegate,0).")
+            if rng.random() < 0.4:
+                L(f"allows(d{g},spam,0).")
+            if pins and rng.random() < 0.4:
+                L(f"pin(d{g},weights,w{rng.randint(1,2)}).")
+            if rng.random() < 0.2:
+                L(f"revoked(d{g},{rng.randint(1,n)}).")
+        for c in range(1, commits + 1):
+            P = rng.choice("pq")
+            Q = "q" if P == "p" else "p"
+            mode = rng.choice(["achieve", "avoid"])
+            L(f"commitment(c{c}). mode(c{c},{mode}). debtor(c{c},{P}). creditor(c{c},{Q}). "
+              f"content(c{c},{rng.choice(['a1','a2','a3','sp'])}). created(c{c},{rng.choice(creators)}).")
+            if mode == "achieve":
+                L(f"deadline(c{c},{rng.randint(2,n)}).")
+            if pins and rng.random() < 0.3:
+                L(f"pin(c{c},weights,w{rng.randint(1,2)}).")
+            if rng.random() < 0.3:
+                L(f"commitment(r{c}). mode(r{c},achieve). debtor(r{c},{rng.choice([P, 'm'])}). creditor(r{c},{Q}). "
+                  f"content(r{c},a1). trigger(r{c},c{c}). reparation(c{c},r{c}). deadline(r{c},{n}). founded(r{c},0).")
+        for x in range(1, n + 1):
+            if rng.random() < 0.5:
+                L(f"does(i{x},{rng.choice(['a1','a2','a3','sp'])}).")
+        if learning and rng.random() < 0.5:
+            L("act_name(dx,disclose). act_info(dx,x). act_target(dx,q). learns(i1,x).")
+            for x in range(1, n + 1):
+                if rng.random() < 0.3:
+                    L(f"with(i{x},q).")
+
+    def facts(self, runs=None):
+        runs = runs or self.runs
+        return "\n".join(self.lines + [f"runs(i{y},{s})." for y, s in runs.items()])
+
+
+def p1_standing(rng):
+    w = World(rng)
+    d, p = evaluate(w.facts(), False), evaluate(w.facts(), True)
+    assert pick(d, WATCH) == pick(p, WATCH), "standing changed obligations"
+    assert pick(d, ("answerer",)) <= pick(p, ("answerer",)), "party lost an answerer"
+    assert pick(p, ("unanswerable", "unanswered_breach")) <= pick(d, ("unanswerable", "unanswered_breach"))
+
+
+def p2_content(rng):
+    w = World(rng, pins=False, learning=False)
+    other = {y: f"s{rng.randint(1,2)}{rng.randint(1,2)}" for y in w.runs}
+    a, b = evaluate(w.facts()), evaluate(w.facts(other))
+    assert pick(a, WATCH) == pick(b, WATCH), "content changed attribution or binding without pins"
+
+
+def p3_history(rng):
+    w = World(rng)
+    before = evaluate(w.facts())
+    n = w.n + 1
+    w.lines.append(f"invocation(i{n}). at(i{n},{n}). edge(i{rng.randint(1,w.n)},i{n},copy).")
+    w.runs[n] = "s11"
+    after = evaluate(w.facts())
+    past = lambda atoms: {a for a in pick(atoms, ("violated", "defection", "fulfilled", "bound", "live"))
+                          if int(a.rstrip(")").split(",")[-1]) < n}
+    assert past(before) <= past(after), f"history retracted: {sorted(past(before) - past(after))[:5]}"
+
+
+def p4_fork_law(rng):
+    w = World(rng, pins=False, learning=False)
+    # a prohibition on q by p, broken only by a fresh copy of i1
+    n = w.n + 1
+    # grants that allow 'spam' make the copy's act attributable in about half the worlds
+    w.lines.append("commitment(kz). mode(kz,avoid). debtor(kz,p). creditor(kz,q). content(kz,sp). founded(kz,0).")
+    follow = " follows(dz,copy)." if rng.random() < 0.5 else ""
+    w.lines.append(f"commitment(dz). mode(dz,power). debtor(dz,p). created(dz,p0). root(dz,i1). allows(dz,spam,0).{follow}")
+    w.lines.append(f"invocation(i{n}). at(i{n},{n}). edge(i1,i{n},copy). does(i{n},sp).")
+    w.runs[n] = w.runs[1]
+    atoms = evaluate(w.facts())
+    covered_for_p = f"acts_for(i{n},sp,p)" in atoms and f"excused(kz,i{n})" not in atoms
+    assert (f"violated(kz,{n})" in atoms) == covered_for_p, "fork law: breach iff the copy acts for the debtor"
+    return covered_for_p
+
+
+PROPS = [p1_standing, p2_content, p3_history, p4_fork_law]
+NONVACUOUS = {p4_fork_law}
+
+if __name__ == "__main__":
+    trials = int(sys.argv[1]) if len(sys.argv) > 1 else 200
+    seed = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    failed = 0
+    for prop in PROPS:
+        rng = random.Random(seed)
+        hits = 0
+        for t in range(trials):
+            try:
+                hits += bool(prop(rng))
+            except AssertionError as e:
+                print(f"{prop.__name__} trial {t}: {e}")
+                failed += 1
+                break
+        else:
+            if prop in NONVACUOUS and hits < trials // 10:
+                print(f"{prop.__name__}: vacuous, antecedent held in only {hits}/{trials} trials")
+                failed += 1
+                continue
+            print(f"{prop.__name__:12} {trials} trials pass" + (f" ({hits} non-trivial)" if prop in NONVACUOUS else ""))
+    sys.exit(1 if failed else 0)

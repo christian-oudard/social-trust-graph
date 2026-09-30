@@ -193,7 +193,9 @@ answerer(C,M) :- ultra_vires(C), created(C,I), content(C,A), acts_for(I,A,M), st
 % acts, not only commitments: an act no principal with standing answers for is orphaned
 answered(I,A) :- acts_for(I,A,P), standing(P).
 orphan(I,A) :- does(I,A), not answered(I,A).
-secured(C) :- reparation(C,C2), answerer(C2,_), debtor(C2,Q), not debtor(C,Q).
+% secured: some in-force reparation has an answerer. Drift-invariance is the narrower
+% property bond/2 below (the reparation's debtor is not the defector).
+secured(C) :- reparation(C,C2), answerer(C2,_).
 unanswerable(C) :- commitment(C), not grant(C), not answerer(C,_), not secured(C).
 
 % ============================================================================

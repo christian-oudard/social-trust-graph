@@ -68,3 +68,7 @@ expect(swap(a2,a3)). reject(covered(gal,a3)). expect(ultra_vires(c5)). expect(an
 expect(bound(c1,alice,6)).                            % revocation does not undo past promises
 expect(ultra_vires(c6)). expect(ended_by(gsub,6)). expect(ultra_vires(c7)).
 reject(covered(gal,a4)).
+% a reparation offered by the sub-agent model itself secures c3 only if that model stands
+commitment(r3). mode(r3,achieve). debtor(r3,sm). creditor(r3,hotel). content(r3,p50). trigger(r3,c3).
+  reparation(c3,r3). deadline(r3,9). founded(r3,0).
+expect(party, secured(c3)). reject(delegate, secured(c3)).

@@ -78,3 +78,8 @@ expect(party, answerer(sale3,m)). reject(party, unanswerable(sale3)).
 expect(delegate, unanswerable(sale3)).
 % m's standing never displaces Dana: her valid commitments are hers under both answers
 expect(answerer(sale2,dana)). reject(answerer(sale2,m)).
+% the same double sale of a non-exclusive good (an e-book licence) is not over-commitment
+act_name(x3,deliver). act_obj(x3,ebook). act_name(x4,deliver). act_obj(x4,ebook).
+commitment(sale3b). mode(sale3b,achieve). debtor(sale3b,dana). creditor(sale3b,b1). content(sale3b,x3). deadline(sale3b,6). created(sale3b,d4).
+commitment(sale4b). mode(sale4b,achieve). debtor(sale4b,dana). creditor(sale4b,b2). content(sale4b,x4). deadline(sale4b,6). created(sale4b,d5).
+reject(overcommitted(dana,sale3b,sale4b)).

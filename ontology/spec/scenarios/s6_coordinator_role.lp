@@ -49,3 +49,7 @@ reject(in_good_standing(alice,10)). expect(in_good_standing(dan,10)).
 expect(charter(coord,pub)). expect(violated(pub,6)). expect(defection(pub,mc,6)).
 % whether mc's breach in office is answered is the open question; the office is not a party
 expect(party, answered_breach(pub,6)). expect(delegate, unanswered_breach(pub,6)).
+% a reparation whose trigger is kept never detaches
+commitment(ralloc). mode(ralloc,achieve). debtor(ralloc,coord). creditor(ralloc,m1). content(ralloc,gs).
+  trigger(ralloc,alloc). reparation(alloc,ralloc). deadline(ralloc,10). founded(ralloc,0).
+reject(detached(ralloc,10)). reject(violated(ralloc,10)).

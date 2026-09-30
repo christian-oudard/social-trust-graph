@@ -18,6 +18,7 @@ import clingo
 HERE = Path(__file__).parent
 CORE = HERE / "core.lp"
 TYPES = HERE / "types.lp"
+CHECK_CONSTS = ("horizon=4",)
 HYPS = {"party": "hyp(machine_party).", "delegate": ""}
 
 
@@ -65,11 +66,12 @@ def run_scenario(path):
 
 
 def run_check(path):
-    witness = solve([CORE, path], "witness_mode.", limit=1)
+    files = [CORE, TYPES, path]
+    witness = solve(files, "witness_mode.", consts=CHECK_CONSTS, limit=1)
     if not witness:
         print("  vacuous: generator admits no world")
         return False
-    cex = solve([CORE, path], "", limit=1)
+    cex = solve(files, "", consts=CHECK_CONSTS, limit=1)
     if cex:
         shown = sorted(str(a) for a in cex[0] if a.name.startswith(("cx", "gen_")))
         print("  COUNTEREXAMPLE:", " ".join(shown))

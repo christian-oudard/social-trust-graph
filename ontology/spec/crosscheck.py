@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-check the Rust (ascent) port against clingo on every scenario, both hypotheses.
+"""Cross-check the Rust (ascent) port against clingo on every scenario, every hypothesis.
 
 For each scenario the base facts are exported to JSON, evaluated by ../rust, and the
 derived atoms are compared with clingo's answer set on every relation the port emits.
@@ -14,6 +14,7 @@ import clingo
 
 HERE = Path(__file__).parent
 BIN = HERE.parent / "rust" / "target" / "release" / "coord-ontology"
+HYPS = ("delegate", "actor", "party")
 
 
 def atoms_of(program_files, extra=""):
@@ -43,15 +44,15 @@ def export(facts_text=None, path=None):
 
 
 def compare(label, js, clingo_files, extra, hyp):
-    rust = subprocess.run([str(BIN)] + (["party"] if hyp else []), input=js,
+    rust = subprocess.run([str(BIN), hyp], input=js,
                           capture_output=True, text=True, check=True).stdout.split()
     names = {a.split("(")[0] for a in rust}
-    ref = atoms_of(clingo_files, extra + ("hyp(machine_party)." if hyp else ""))
+    ref = atoms_of(clingo_files, extra + f"hyp({hyp}).")
     ref = {str(a) for a in ref if a.name in names}
     rust = set(rust)
     if ref == rust:
         return True
-    print(f"{label} [{'party' if hyp else 'delegate'}] MISMATCH")
+    print(f"{label} [{hyp}] MISMATCH")
     for a in sorted(ref - rust)[:10]:
         print("   clingo only:", a)
     for a in sorted(rust - ref)[:10]:
@@ -65,7 +66,7 @@ def main(argv):
     n = 0
     for p in sorted((HERE / "scenarios").glob("*.lp")):
         js = export(path=p)
-        for hyp in (False, True):
+        for hyp in HYPS:
             ok &= compare(p.stem, js, core + [p], "", hyp)
             n += 1
     if "--random" in argv:
@@ -77,7 +78,7 @@ def main(argv):
             w = World(rng)
             facts = w.facts()
             js = export(facts_text=facts)
-            for hyp in (False, True):
+            for hyp in HYPS:
                 ok &= compare(f"random{t}", js, core, facts, hyp)
                 n += 1
     print(f"{n} comparisons, {'all equal' if ok else 'MISMATCHES'}")

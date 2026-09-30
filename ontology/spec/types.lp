@@ -62,6 +62,7 @@ type_error(50,"revokes(I,G): G must be scoped") :- revokes(_,G), not scoped(G).
 type_error(52,"invocation after the horizon") :- at(_,T), not time(T).
 type_error(53,"recognized and created: pick one") :- recognized(C,_), created(C,_).
 type_error(54,"follows merge: a merge carries knowledge, never authority") :- follows(_,merge).
+type_error(55,"feeds run forward in time") :- feeds(I1,I2), at(I1,T1), at(I2,T2), T2 <= T1.
 type_error(51,"pin/3 with two hashes for one slot: use pin/4 configurations") :- pin(C,Sl,H1), pin(C,Sl,H2), H1 != H2.
 
 % retired v0.1 vocabulary, flagged so old scenarios fail loudly

@@ -56,8 +56,8 @@ expect(violated(nda,4)). expect(violator(nda,a4)). expect(defection(nda,alice,4)
 % swap, restored by the rollback; the obligation never moved
 expect(assured(nda,a2)). expect(unassured(nda,a3)). expect(unassured(nda,a4)). expect(assured(nda,a5)).
 % the bond repairs without any act of Alice's lineage; her own reparation defaults
-expect(bond(nda,bnd)). expect(repaired(nda,6)). expect(violated(rep,9)). expect(defection(rep,alice,9)).
-reject(in_good_standing(alice,9)).
+expect(bond(nda,bnd)). expect(repaired(nda,6)). expect(violated(rep,8)). expect(defection(rep,alice,8)).
+reject(in_good_standing(alice,8)).
 expect(in_good_standing(alice,7)).
 % answerability does not depend on the machine question: Alice is a person
 reject(unanswerable(nda)).

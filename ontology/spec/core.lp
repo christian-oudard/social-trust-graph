@@ -28,8 +28,8 @@ time(0..horizon).
 % 1. Substrate and lineage. Change kinds are derived from content, not declared.
 % ============================================================================
 
-changed(I1,I2,Slot) :- edge(I1,I2,_), runs(I1,S1), runs(I2,S2),
-                       part(S1,Slot,H1), part(S2,Slot,H2), H1 != H2.
+changed(I1,I2,Slot) :- edge(I1,I2,_), runs(I1,S1), runs(I2,S2), part(S1,Slot,H1), not part(S2,Slot,H1).
+changed(I1,I2,Slot) :- edge(I1,I2,_), runs(I1,S1), runs(I2,S2), part(S2,Slot,H2), not part(S1,Slot,H2).
 swap(I1,I2)    :- changed(I1,I2,weights).
 rewrite(I1,I2) :- changed(I1,I2,memory).
 
@@ -83,13 +83,18 @@ has_amount(A) :- act_amount(A,_).
 % RESPONSIBILITY (P answers for I doing A). Custody of a lineage is nothing more than
 % holding an unattenuated grant over it; there is no separate 'operator' primitive.
 acts_for(I,A,P) :- covered(G,I), debtor(G,P), within(G,A).
+% A role's powers are grants with a role debtor and no lineage root: they cover whatever
+% the current filler's invocations do within the role's scope. Coordinator is such a role.
+acts_for(I,A,R) :- grant(G), debtor(G,R), role(R), within(G,A), fills(P,R,T1,T2),
+                   at(I,T), T1 <= T, T < T2, acts_for(I,P).
 
 % A created commitment is valid iff its content is within the creator's authority for
 % its debtor (principal debtor), or the creator acts for the current filler of the
 % debtor role. Delegating is itself an act named 'delegate'.
 valid_creation(C) :- created(C,I), debtor(C,P), principal(P), content(C,A), acts_for(I,A,P), not grant(C).
-valid_creation(C) :- created(C,I), debtor(C,R), role(R), at(I,T), content(C,A),
-                     fills(P,R,T1,T2), T1 <= T, T < T2, acts_for(I,A,P).
+% a role commitment must be within the ROLE's powers, not merely the filler's own: a
+% coordinator cannot bind its successors to anything outside the charter
+valid_creation(C) :- created(C,I), debtor(C,R), role(R), content(C,A), acts_for(I,A,R), not grant(C).
 valid_creation(G) :- grant(G), created(G,I), debtor(G,P), can_delegate(I,P).
 can_delegate(I,P) :- covered(G,I), debtor(G,P), scope(G,delegate,_).
 can_delegate(I,P) :- covered(G,I), debtor(G,P), scope(G,all,_).
@@ -123,7 +128,7 @@ performs(C,I,T) :- bound(C,P,T), content(C,A), does(I,A), at(I,T), acts_for(I,A,
 excused(C,I) :- mode(C,avoid), creditor(C,Q), content(C,A), acts_for(I,A,Q).
 fulfilled(C,T)  :- mode(C,achieve), performs(C,_,T0), T0 <= T, time(T).
 violated(C,T)   :- mode(C,avoid), performs(C,_,T).
-violated(C,T)   :- mode(C,achieve), deadline(C,D), detached(C,D), not fulfilled(C,D), T = D + 1, time(T).
+violated(C,D)   :- mode(C,achieve), deadline(C,D), detached(C,D), not fulfilled(C,D).
 violator(C,I)   :- mode(C,avoid), performs(C,I,_).
 % two achieve commitments of one principal on one exclusive object cannot both be met
 overcommitted(P,C1,C2) :- mode(C1,achieve), mode(C2,achieve), C1 < C2, content(C1,A1), content(C2,A2),
@@ -160,7 +165,7 @@ violated_by_time(C,T) :- violated(C,T0), time(T), T0 <= T.
 %    rollback restores it; obligations are keyed by principal, so a rollback keeps them.
 % ============================================================================
 
-slot_mismatch(E,S) :- test(E,S0,Slot), part(S0,Slot,H), part(S,Slot,H2), H != H2.
+slot_mismatch(E,S) :- test(E,S0,Slot), part(S0,Slot,H), substrate(S), not part(S,Slot,H).
 fresh(E,T) :- issued(E,T0), time(T), T >= T0, not horizon(E,_).
 fresh(E,T) :- issued(E,T0), horizon(E,H), time(T), T >= T0, T < T0 + H.
 supports(E,I,N) :- refrains(E,N), invocation(I), runs(I,S), test(E,_,_), not slot_mismatch(E,S),
@@ -180,8 +185,10 @@ standing(P) :- kind(P,machine), hyp(machine_party).
 % An ultra vires commitment made by an invocation that also acts for a principal with
 % standing binds that principal instead (warranty of authority), if its own scope
 % covers making it. Otherwise nobody answers.
-answerer(C,P) :- valid_creation(C), debtor(C,P), principal(P), standing(P).
-answerer(C,P) :- valid_creation(C), debtor(C,R), role(R), fills(P,R,_,_), standing(P).
+in_force(C) :- valid_creation(C).
+in_force(C) :- founded(C,_).
+answerer(C,P) :- in_force(C), debtor(C,P), principal(P), standing(P).
+answerer(C,P) :- in_force(C), debtor(C,R), role(R), fills(P,R,_,_), standing(P).
 answerer(C,M) :- ultra_vires(C), created(C,I), content(C,A), acts_for(I,A,M), standing(M), debtor(C,P), M != P.
 % acts, not only commitments: an act no principal with standing answers for is orphaned
 answered(I,A) :- acts_for(I,A,P), standing(P).
@@ -194,7 +201,11 @@ unanswerable(C) :- commitment(C), not grant(C), not answerer(C,_), not secured(C
 % ============================================================================
 
 defection(C,P,T) :- violated(C,T), debtor(C,P), principal(P).
-defection(C,P,T) :- violated(C,T), debtor(C,R), role(R), fills(P,R,T1,T2), T1 <= T-1, T-1 < T2.
+defection(C,P,T) :- violated(C,T), debtor(C,R), role(R), fills(P,R,T1,T2), T1 <= T, T < T2.
+% a breach no principal with standing answers for, and no bond secures
+answered_breach(C,T) :- defection(C,P,T), standing(P).
+answered_breach(C,T) :- violated(C,T), secured(C).
+unanswered_breach(C,T) :- violated(C,T), not answered_breach(C,T).
 repaired(C,T) :- violated(C,T0), T0 <= T, reparation(C,C2), fulfilled(C2,T).
 % a bond is a reparation whose debtor is not the defector: drift-invariant enforcement
 bond(C,C2) :- reparation(C,C2), debtor(C,P), debtor(C2,Q), P != Q.

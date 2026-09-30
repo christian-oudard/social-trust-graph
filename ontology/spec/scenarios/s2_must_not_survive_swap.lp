@@ -56,4 +56,26 @@ expect(excused(nc,a3)). reject(violated(nc,3)).
 % the swap did not touch Alice's own authority over her agent
 expect(covered(gagent,a3)). expect(acts_for(a3,alice)).
 % the swapped agent is not Bob's processor: nothing it does is attributed to Bob
-reject(acts_for(a3,bob)). expect(acts_for(a2,bob)).
+reject(acts_for(a3,pb,bob)). expect(acts_for(a2,pb,bob)). expect(acts_for(a3,pb2,bob)).
+
+%% ---- S2b. Debtor-side forms of the same pin mechanism ----
+% (i) a version warranty: Alice warrants to Carol that her agent, while on w1, will not
+%     emit unsafe output. After the swap, unsafe output is not a breach of THIS promise.
+% (ii) a performer-specific duty: the audit must be produced by w1 (Carol's substantial
+%     interest in the performer, Restatement (Second) 318(2)). The swapped agent's audit
+%     does not count, so the duty is violated at its deadline (self-induced impossibility).
+% (iii) a change envelope: a second consent from Bob, pinned to {w1, w2}, survives the swap.
+act_name(unsafe,unsafe). act_name(audit,audit). act_name(pb2,process_bob2).
+
+does(a3,unsafe). does(a3,audit). does(a3,pb2).
+commitment(war). mode(war,avoid). debtor(war,alice). creditor(war,carol). content(war,unsafe).
+  pin(war,weights,w1). founded(war,0).
+commitment(aud). mode(aud,achieve). debtor(aud,alice). creditor(aud,carol). content(aud,audit).
+  pin(aud,weights,w1). deadline(aud,5). founded(aud,0).
+commitment(nb2). mode(nb2,avoid). debtor(nb2,alice). creditor(nb2,bob). content(nb2,pb2). founded(nb2,0).
+commitment(cb2). mode(cb2,power). debtor(cb2,bob). created(cb2,bob0).
+  root(cb2,a1). follows(cb2,continue). pin(cb2,weights,w1). pin(cb2,weights,w2). allows(cb2,process_bob2,0).
+
+reject(violated(war,3)). expect(off_pin(war,a3)).
+reject(fulfilled(aud,5)). expect(violated(aud,5)). expect(defection(aud,alice,5)).
+expect(covered(cb2,a3)). expect(excused(nb2,a3)). reject(violated(nb2,3)).

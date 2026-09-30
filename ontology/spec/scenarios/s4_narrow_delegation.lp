@@ -61,7 +61,7 @@ expect(answerer(c2,vendor)).                          % the custodian answers ei
 expect(party, answerer(c2,ag)). reject(delegate, answerer(c2,ag)).
 expect(valid_creation(gsub)). expect(scope(gsub,pay,500)). reject(scope(gsub,pay,800)).
 expect(ultra_vires(c3)). expect(valid_creation(c4)).
-expect(violated(c4,10)). expect(defection(c4,alice,10)). % the sub-agent's valid promise is Alice's
+expect(violated(c4,9)). expect(defection(c4,alice,9)). % the sub-agent's valid promise is Alice's
 expect(party, answerer(c3,sm)). expect(delegate, unanswerable(c3)).   % no custodian: the open question decides
 expect(delegate, orphan(sub1,spam)). reject(party, orphan(sub1,spam)).
 expect(swap(a2,a3)). reject(covered(gal,a3)). expect(ultra_vires(c5)). expect(answerer(c5,vendor)).

@@ -66,9 +66,9 @@ follows(gm,continue). follows(gm,copy). follows(gm,merge). allows(gm,all,0). fou
 expect(acts_for(d7,dana)). expect(acts_for(d8,dana)).
 expect(valid_creation(sale1)). expect(valid_creation(sale2)).
 expect(overcommitted(dana,sale1,sale2)).
-expect(fulfilled(sale1,4)). expect(violated(sale2,7)).
-expect(defection(sale2,dana,7)).
-expect(fulfilled(kach,4)). reject(violated(kach,9)).        % discharged once, by either branch
+expect(fulfilled(sale1,4)). expect(violated(sale2,6)).
+expect(defection(sale2,dana,6)).
+expect(fulfilled(kach,4)). reject(violated(kach,8)).        % discharged once, by either branch
 expect(violated(kavoid,5)). expect(violator(kavoid,d8)).    % broken by any branch
 expect(defection(kavoid,dana,5)).
 % Erin's copy is a stranger to Erin

@@ -99,9 +99,11 @@ ended_by(C,T) :- releases(I,C), at(I,T0), time(T), T > T0, creditor(C,Q), acts_f
 ended_by(G,T) :- revokes(I,G), at(I,T0), time(T), T > T0, debtor(G,P), acts_for(I,revoking,P), not security(G),
                  not vitiated(I).
 ended_by(G2,T) :- parent_grant(G2,G1), ended_by(G1,T), start(G2,T0), T > T0, not security(G2).
-% a warranty expires after its deadline; a security ends once the breach it secures is repaired
+% a warranty expires after its deadline; a security ends with the obligation it secures
+% (Restatement (Third) of Agency 3.12-3.13)
 ended_by(W,T) :- mode(W,warrant), deadline(W,D), time(T), T > D.
-ended_by(G,T) :- security(G), trigger(G,C), repaired(C,_,T1), time(T), T > T1.
+ended_by(G,T) :- security(G), trigger(G,C), ended_by(C,T).
+ended_by(G,T) :- security(G), trigger(G,C), mode(C,achieve), fulfilled(C,T0), time(T), T > T0.
 % a resolutive condition: the commitment ends once the act occurs within its range
 ended_by(C,T) :- until(C,A), does(I,A), at(I,T0), time(T), T > T0, in_range(C,I).
 in_range(C,I) :- scoped(C), in_lineage(C,I).
@@ -117,7 +119,9 @@ trigger_party(C,Q) :- creditor(C,Q), not scoped(C).
 trigger_party(G,P) :- scoped(G), debtor(G,P).
 has_trigger(C) :- trigger(C,_).
 detached(C,T) :- live(C,T), not has_trigger(C).
-detached(C,T) :- live(C,T), trigger(C,C0), violated(C0,T0), T0 < T.
+detached(C,T) :- live(C,T), trigger(C,C0), violated(C0,T0), T0 < T, not security(C).
+% a security can be exercised only while a breach of the secured duty is unrepaired
+detached(G,T) :- live(G,T), security(G), trigger(G,C), violated(C,T0), T0 < T, not repaired(C,T0,T-1).
 detached(C,T) :- live(C,T), trigger(C,A), act_name(A,_), trigger_party(C,Q), does(I,A), acts_for(I,A,Q),
                  at(I,T0), T0 < T, start(C,Ts), Ts <= T0.
 
@@ -192,7 +196,7 @@ conduct_of(I,A,P) :- secures(I,A,P), does(I,A).
 can_grant(I,P) :- covered(G,I), grant(G), not security(G), debtor(G,P), may_delegate(G).
 valid_creation(C) :- created(C,I), debtor(C,E), content(C,A), acts_for(I,A,E), not scoped(C), not vitiated(I).
 valid_creation(G) :- scoped(G), created(G,I), debtor(G,P), can_grant(I,P), not vitiated(I).
-ultra_vires(C) :- created(C,_), not valid_creation(C).
+unauthorized(C) :- created(C,_), not valid_creation(C).
 
 % ============================================================================
 % 4. Roles. Appointment is an act of the appointer; holding needs the capacity to owe.

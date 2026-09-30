@@ -72,15 +72,15 @@ commitment(r3). mode(r3,achieve). debtor(r3,sm). creditor(r3,hotel). content(r3,
 
 %% ---- expectations ----
 expect(valid_creation(c1)). expect(answerer(c1,alice)). expect(fulfilled(c1,8)).
-expect(ultra_vires(c2)). reject(bound(c2,alice,3)).
+expect(unauthorized(c2)). reject(bound(c2,alice,3)).
 % out of scope binds nobody: the hotel could see the cap in the registry
 reject(answerer(c2,vendor)). reject(answerer(c2,alice)). reject(unanswerable(c2)).
 expect(valid_creation(gsub)). expect(scope(gsub,pay,500)). reject(scope(gsub,pay,800)).
-expect(ultra_vires(c3)). expect(valid_creation(c4)).
+expect(unauthorized(c3)). expect(valid_creation(c4)).
 expect(violated(c4,9)). expect(defection(c4,alice,9)).       % the sub-agent's valid promise is Alice's
 % caveats accumulate: the w1 pin excludes the v1 model and the swapped agent, whatever the sub-grant says
-expect(valid_creation(gsubv)). reject(covered(gsubv,v1a)). expect(ultra_vires(cv)).
-expect(valid_creation(gself)). expect(in_lineage(gself,a3)). reject(covered(gself,a3)). expect(ultra_vires(c5)).
+expect(valid_creation(gsubv)). reject(covered(gsubv,v1a)). expect(unauthorized(cv)).
+expect(valid_creation(gself)). expect(in_lineage(gself,a3)). reject(covered(gself,a3)). expect(unauthorized(c5)).
 expect(swap(a2,a3)). reject(covered(gal,a3)).
 expect(acts_for(a3,vendor)). reject(acts_for(a3,alice)).   % the vendor still answers for the swapped agent
 % nobody operates the v1 model: whether its own promise binds is the open question
@@ -92,4 +92,4 @@ expect(delegate, void(r3)). reject(delegate, secured(cv)). expect(actor, secured
 % revocation: effective the step after Alice's act, cascading to sub-grants; past promises stand
 expect(bound(c1,alice,6)).
 reject(ended_by(gal,5)). expect(ended_by(gal,6)). expect(ended_by(gsub,6)).
-expect(ultra_vires(c6)). expect(ultra_vires(c7)). reject(covered(gal,a4)).
+expect(unauthorized(c6)). expect(unauthorized(c7)). reject(covered(gal,a4)).

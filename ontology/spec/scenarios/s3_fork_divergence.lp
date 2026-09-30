@@ -87,7 +87,7 @@ expect(violated(kavoid,5)). expect(violator(kavoid,d8)).    % broken by any bran
 expect(defection(kavoid,dana,5)).
 % Erin: the copy cannot bind her, but she answers for it
 reject(acts_for(e3,erin)). expect(resp_only(e3,erin)).
-expect(ultra_vires(sale3)). reject(bound(sale3,erin,4)). reject(answerer(sale3,erin)).   % a promise out of scope binds nobody
+expect(unauthorized(sale3)). reject(bound(sale3,erin,4)). reject(answerer(sale3,erin)).   % a promise out of scope binds nobody
 expect(violated(kerin,2)). expect(defection(kerin,erin,2)).
 % Fay answers for her narrow agent's copy; nobody answers for the wild instance unless
 % the model itself can bear duties

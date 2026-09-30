@@ -22,7 +22,7 @@ invocation(a1). at(a1,3). runs(a1,ba). edge(a0,a1,continue).
 commitment(al). mode(al,achieve). debtor(al,coord). creditor(al,carol). content(al,gv). deadline(al,9). created(al,a1).
 commitment(nf). mode(nf,avoid). debtor(nf,coord). creditor(nf,carol). content(nf,fav). recognized(nf,0).
 does(a1,fav).
-expect(ultra_vires(al)). expect(defection(nf,alice,3)). reject(defection(nf,bob,3)).
+expect(unauthorized(al)). expect(defection(nf,alice,3)). reject(defection(nf,bob,3)).
 
 % (b)
 invocation(c1). at(c1,3). runs(c1,bc). edge(c0,c1,continue).

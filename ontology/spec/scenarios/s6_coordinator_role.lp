@@ -64,7 +64,7 @@ commitment(ralloc). mode(ralloc,achieve). debtor(ralloc,coord). creditor(ralloc,
 %% ---- expectations ----
 expect(valid_creation(alloc)). expect(bound(alloc,dan,9)). expect(bound(alloc,eve,9)). reject(bound(alloc,alice,9)).
 expect(fulfilled(alloc,9)).
-expect(ultra_vires(bad)). reject(answerer(bad,alice)).     % beyond the charter: binds nobody
+expect(unauthorized(bad)). reject(answerer(bad,alice)).     % beyond the charter: binds nobody
 expect(violated(nofav,2)). expect(defection(nofav,alice,2)). reject(defection(nofav,dan,2)).
 reject(in_good_standing(alice,10)).
 % co-holders: an act breaches for its performer only

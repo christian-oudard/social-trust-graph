@@ -117,20 +117,20 @@ expect(overcommitted(nia,sale1,sale2)).
 expect(knows(n3,x1)). expect(violated(conf1,4)). expect(defection(conf1,nia,4)).
 reject(acts_for(n3,q1)).                               % feeds carry knowledge, never authority
 % simulation: never attribution; assurance only because Nia put her name on it
-reject(acts_for(sim1,q1)). expect(ultra_vires(fake)). reject(bound(fake,q1,5)).
+reject(acts_for(sim1,q1)). expect(unauthorized(fake)). reject(bound(fake,q1,5)).
 reject(answerer(fake,nia)).                             % a simulation's "promise" binds nobody
 expect(assured(kq,qn2)).
 % rollback is not retraction; acceptance counts only by the offeree, after the offer
 expect(detached(off1,7)). expect(bound(off1,nia,7)).
 reject(detached(off2,7)). reject(detached(off3,7)).
 % injection by the counterparty voids its own windfall and makes nobody liable for it
-expect(ultra_vires(gift)). reject(answerer(gift,nia)). reject(defection(gift,nia,5)).
+expect(unauthorized(gift)). reject(answerer(gift,nia)). reject(defection(gift,nia,5)).
 % partitioned: authority split at the fork, learning shared through warranted sanitization
-expect(ultra_vires(saleo2)). reject(overcommitted(ola,saleo1,saleo2)).
+expect(unauthorized(saleo2)). reject(overcommitted(ola,saleo1,saleo2)).
 expect(knows(o1b,y1)). reject(knows(o1s,y1)). reject(knows(o3,y1)). reject(violated(confo,5)).
 expect(imputed(ola,y1)).                                % the principal still knows
 expect(covered(go,o3)). reject(covered(go,o1)).
 % the probe cannot bind Ola, but Ola answers for its conduct: no fork-and-disown
-reject(acts_for(probe,ola)). expect(resp_only(probe,ola)). expect(ultra_vires(offp)).
+reject(acts_for(probe,ola)). expect(resp_only(probe,ola)). expect(unauthorized(offp)).
 reject(answerer(offp,ola)).                             % its promise binds nobody
 does(probe,spam). act_name(spam,spam). expect(conduct_of(probe,spam,ola)).   % its conduct is Ola's

@@ -29,7 +29,7 @@ invocation(d1). at(d1,1). runs(d1,s1).
 invocation(thief). at(thief,3). runs(thief,s1).                 % exfiltrated content, no edge
 act_name(p9,pay). act_amount(p9,900).
 commitment(loot). mode(loot,achieve). debtor(loot,dana). creditor(loot,bob). content(loot,p9). deadline(loot,6). created(loot,thief).
-expect(ultra_vires(loot)). reject(bound(loot,dana,5)). expect(acts_for(thief,eve)). reject(answerer(loot,eve)).
+expect(unauthorized(loot)). reject(bound(loot,dana,5)). expect(acts_for(thief,eve)). reject(answerer(loot,eve)).
 
 % (b)
 commitment(gba). mode(gba,power). debtor(gba,bob). created(gba,bob0). root(gba,bx1). follows(gba,continue). follows(gba,copy). allows(gba,all,0).

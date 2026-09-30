@@ -39,7 +39,7 @@ ascent! {
     relation defection_h(S, S, i64); relation unaudited_exposure_h(S, i64); relation knows_h(S, S);
     relation disclose_h(S, S); relation conduct_of_h(S, S, S); relation live_h(S, i64);
     relation vitiated_h(S); relation repaired_h(S, i64, i64); relation custodian_h(S, S);
-    relation holder_h(S, S, i64);
+    relation holder_h(S, S, i64); relation fulfilled_h(S, i64);
 
     // ================= 0. capacities =================
     relation cap(S); relation bundle(S, S); relation capacity(S, S); relation standing(S);
@@ -94,7 +94,8 @@ ascent! {
                        !security(g), !vitiated_h(i);
     ended_by(g2, t) <-- parent_grant_h(g2, g1), ended_by(g1, t), start(g2, t0), if t > t0, !security(g2);
     ended_by(w, t) <-- now(t), mode(w, m), if *m == "warrant", deadline(w, d), if t > d;
-    ended_by(g, t) <-- now(t), security(g), trigger(g, c), repaired_h(c, _, t1), if t > t1;
+    ended_by(g, t) <-- security(g), trigger(g, c), ended_by(c, t);
+    ended_by(g, t) <-- now(t), security(g), trigger(g, c), mode(c, m), if *m == "achieve", fulfilled_h(c, t0), if t > t0;
     ended_by(c, t) <-- now(t), until(c, a), does_past(i, a), at(i, t0), if t > t0, in_range(c, i);
     relation in_range(S, S);
     in_range(c, i) <-- scoped(c), in_lineage(c, i);
@@ -107,7 +108,8 @@ ascent! {
     trigger_party(g, p) <-- scoped(g), debtor(g, p);
     has_trigger(c) <-- trigger(c, _);
     detached(c, t) <-- live(c, t), !has_trigger(c);
-    detached(c, t) <-- live(c, t), trigger(c, c0), violated_h(c0, t0), if t0 < t;
+    detached(c, t) <-- live(c, t), trigger(c, c0), violated_h(c0, t0), if t0 < t, !security(c);
+    detached(g, t) <-- live(g, t), security(g), trigger(g, c), violated_h(c, t0), if t0 < t, !repaired_h(c, t0, t - 1);
     detached(c, t) <-- live(c, t), trigger(c, a), act_name(a, _), trigger_party(c, q), does_past(i, a),
                        acts_for3_h(i, a, q), at(i, t0), if t0 < t, start(c, ts), if ts <= t0;
 
@@ -168,13 +170,13 @@ ascent! {
     conduct_of(i, a, p) <-- answers_for(i, p), does(i, a);
     conduct_of(i, a, p) <-- secures(i, a, p), does(i, a);
 
-    relation vitiated(S); relation can_grant(S, S); relation valid_creation(S); relation ultra_vires(S);
+    relation vitiated(S); relation can_grant(S, S); relation valid_creation(S); relation unauthorized(S);
     vitiated(i) <-- now(t), at(i, t), induced(i, q), !acts_for2(i, q);
     can_grant(i, p) <-- covered(g, i), grant(g), !security(g), debtor(g, p), may_delegate(g);
     valid_creation(c) <-- now(t), created(c, i), at(i, t), debtor(c, e), content(c, a), acts_for3(i, a, e),
                           !scoped(c), !vitiated(i);
     valid_creation(g) <-- now(t), scoped(g), created(g, i), at(i, t), debtor(g, p), can_grant(i, p), !vitiated(i);
-    ultra_vires(c) <-- now(t), created(c, i), at(i, t), !valid_creation(c);
+    unauthorized(c) <-- now(t), created(c, i), at(i, t), !valid_creation(c);
 
     // ================= 4. roles and binding =================
     relation holder(S, S, i64); relation held(S, i64); relation vacant(S, i64); relation bound(S, S, i64);
@@ -326,7 +328,7 @@ fn main() {
         macro_rules! feed { ($($h:ident),*) => { $( p.$h = hist.$h.clone(); )* } }
         feed!(parent_grant_h, valid_creation_h, scope_h, violated_h, performs_h, acts_for3_h, acts_for2_h,
               answers_for_h, resp_only_h, defection_h, unaudited_exposure_h, knows_h, disclose_h, conduct_of_h,
-              live_h, vitiated_h, repaired_h, custodian_h, holder_h);
+              live_h, vitiated_h, repaired_h, custodian_h, holder_h, fulfilled_h);
         p.run();
         extend(&mut hist.parent_grant_h, &p.parent_grant);
         extend(&mut hist.valid_creation_h, &p.valid_creation);
@@ -347,6 +349,7 @@ fn main() {
         extend(&mut hist.repaired_h, &p.repaired);
         extend(&mut hist.custodian_h, &p.custodian);
         extend(&mut hist.holder_h, &p.holder);
+        extend(&mut hist.fulfilled_h, &p.fulfilled);
         emit_step(&p, &mut out);
         if t == hz {
             emit_final(&p, &mut out);
@@ -390,7 +393,7 @@ fn emit_step(p: &Core, out: &mut BTreeSet<String>) {
     put!(out, "conduct_of", p.conduct_of, |a, b, c|);
     put!(out, "vitiated", p.vitiated, |a|);
     put!(out, "valid_creation", p.valid_creation, |a|);
-    put!(out, "ultra_vires", p.ultra_vires, |a|);
+    put!(out, "unauthorized", p.unauthorized, |a|);
     put!(out, "parent_grant", p.parent_grant, |a, b|);
     put!(out, "candidate_parent", p.candidate_parent, |a, b|);
     put!(out, "can_grant", p.can_grant, |a, b|);

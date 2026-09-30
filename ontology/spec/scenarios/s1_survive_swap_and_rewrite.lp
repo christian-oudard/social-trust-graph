@@ -95,6 +95,12 @@ expect(fulfilled(rep,6)).                                   % Bob executes Alice
 expect(repaired(nda,4,6)). reject(violated(rep,8)).
 expect(in_good_standing(alice,7)). reject(in_good_standing(alice,5)).
 reject(unanswerable(nda)).
-% the security ends once the breach is repaired, and never let Bob bind Alice anew
-expect(ended_by(gcol,7)). reject(covered(gcol,bob2)). reject(fulfilled(newdebt,10)).
-expect(ultra_vires(newdebt)). reject(bound(newdebt,alice,9)).
+% the security sleeps once the breach is repaired, and never lets Bob bind Alice anew
+reject(covered(gcol,bob2)). reject(ended_by(gcol,8)). expect(unauthorized(newdebt)). reject(bound(newdebt,alice,9)).
+% a second breach wakes it again: it lasts as long as the obligation it secures
+invocation(a6). at(a6,9). runs(a6,s3). edge(a5,a6,continue). does(a6,sell).
+invocation(bob3). at(bob3,10). runs(bob3,body_bob). edge(bob2,bob3,continue). does(bob3,pay_alice).
+expect(violated(nda,9)). expect(covered(gcol,bob3)). expect(repaired(nda,9,10)).
+% once Bob releases the NDA itself, the security that secured it ends with it
+invocation(bob4). at(bob4,11). runs(bob4,body_bob). edge(bob3,bob4,continue). releases(bob4,nda).
+expect(ended_by(nda,12)). expect(ended_by(gcol,12)). reject(ended_by(gcol,11)).

@@ -52,7 +52,7 @@ commitment(gnar). mode(gnar,power). debtor(gnar,alice). created(gnar,alice0). ro
 invocation(n1). at(n1,2). runs(n1,s1).
 act_name(p9k,pay). act_amount(p9k,9000).
 commitment(big). mode(big,achieve). debtor(big,treasurer). creditor(big,hotel). content(big,p9k). deadline(big,9). created(big,n1).
-expect(ultra_vires(big)).
+expect(unauthorized(big)).
 
 % (d) Alice steers her own agent: its promise stands
 act_name(p4,pay). act_amount(p4,4).

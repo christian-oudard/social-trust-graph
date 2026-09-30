@@ -72,7 +72,7 @@ expect(resp_only(fresh,alice)). expect(violated(conf,5)). reject(orphan(fresh,dx
 % (d)
 reject(resp_only(b2,alice)). reject(violated(nosp,4)).
 % (e)
-expect(vitiated(b3)). reject(ended_by(k2,6)). expect(ultra_vires(perm)). reject(holder(desk,alice,7)).
+expect(vitiated(b3)). reject(ended_by(k2,6)). expect(unauthorized(perm)). reject(holder(desk,alice,7)).
 % (f)
-reject(within(gcap,pinv)). expect(ultra_vires(inv)).
+reject(within(gcap,pinv)). expect(unauthorized(inv)).
 reject(eff_follows(gsub,copy)).

@@ -203,7 +203,7 @@ charter(R,C) :- debtor(C,R), role(R).
 performs(C,I,T) :- bound(C,P,T), content(C,A), does(I,A), at(I,T), conduct_of(I,A,P),
                    not excused(C,I), not off_pin(C,I).
 excused(C,I) :- mode(C,avoid), creditor(C,Q), content(C,A), permitted(I,A,Q).
-excused(C,I) :- creditor(C,Q), induced(I,Q), invocation(I), commitment(C).
+excused(C,I) :- mode(C,avoid), creditor(C,Q), induced(I,Q), invocation(I).   % a breach the creditor induced
 fulfilled(C,T) :- mode(C,achieve), performs(C,_,T0), T0 <= T, time(T).
 violated(C,T)  :- mode(C,avoid), performs(C,_,T).
 violated(C,D)  :- mode(C,achieve), deadline(C,D), detached(C,D), not fulfilled(C,D).

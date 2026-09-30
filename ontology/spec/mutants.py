@@ -70,6 +70,8 @@ MUTANTS = [
     ("fork-and-disown", "resp_only(I2,P) :- edge(I1,I2,copy), acts_for(I1,copying,P), not acts_for(I2,P).", ""),
     ("spawn liability unscoped", "resp_only(I2,P) :- edge(I1,I2,copy), acts_for(I1,copying,P), not acts_for(I2,P).",
      "resp_only(I2,P) :- edge(I1,I2,copy), acts_for(I1,P), not acts_for(I2,P)."),
+    ("induced performance excused", "excused(C,I) :- mode(C,avoid), creditor(C,Q), induced(I,Q), invocation(I).",
+     "excused(C,I) :- creditor(C,Q), induced(I,Q), invocation(I), commitment(C)."),
     ("injection binds", "valid_creation(C) :- created(C,I), debtor(C,P), principal(P), content(C,A), acts_for(I,A,P),\n                     not scoped(C), not induced_by_creditor(C).",
      "valid_creation(C) :- created(C,I), debtor(C,P), principal(P), content(C,A), acts_for(I,A,P),\n                     not scoped(C)."),
     ("role limited by holder", "valid_creation(C) :- created(C,I), debtor(C,R), role(R), content(C,A), acts_for(I,A,R),",

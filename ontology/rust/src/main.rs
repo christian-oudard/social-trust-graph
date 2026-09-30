@@ -203,7 +203,7 @@ ascent! {
     performs(c, i, t) <-- bound(c, p, t), content(c, a), does(i, a), at(i, t), conduct_of(i, a, p),
                           !excused(c, i), !off_pin(c, i);
     excused(c, i) <-- mode(c, m), if *m == "avoid", creditor(c, q), content(c, a), permitted(i, a, q);
-    excused(c, i) <-- now(t), at(i, t), creditor(c, q), induced(i, q), commitment(c);
+    excused(c, i) <-- now(t), at(i, t), mode(c, m), if *m == "avoid", creditor(c, q), induced(i, q);
     fulfilled(c, t) <-- now(t), mode(c, m), if *m == "achieve", performs(c, _, t);
     fulfilled(c, t) <-- now(t), mode(c, m), if *m == "achieve", performs_h(c, _, _);
     violated(c, t) <-- mode(c, m), if *m == "avoid", performs(c, _, t);

@@ -81,6 +81,11 @@ does(qq0,acc3).     % Q2 "accepts" before the offer exists: no effect
 invocation(n4). at(n4,5). runs(n4,snm). edge(n3,n4,continue). induced(n4,q2).
 commitment(gift). mode(gift,achieve). debtor(gift,nia). creditor(gift,q2). content(gift,o10). deadline(gift,10). created(gift,n4).
 
+% a performance the creditor prompted still counts as performance
+invocation(n5). at(n5,8). runs(n5,snm). edge(n4,n5,continue). induced(n5,q2).
+does(n5,o100).
+expect(fulfilled(off1,8)). reject(violated(off1,10)).
+
 % ---- Ola: partitioned parallel negotiation ----
 commitment(go). mode(go,power). debtor(go,ola). root(go,o0).
 follows(go,continue). allows(go,all,0). recognized(go,0).

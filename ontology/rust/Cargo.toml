@@ -1,0 +1,9 @@
+[package]
+name = "coord-ontology"
+version = "0.1.0"
+edition = "2021"
+description = "Rust Datalog (ascent) port of spec/core.lp, cross-checked against clingo"
+
+[dependencies]
+ascent = "0.8.1"
+serde_json = "1"

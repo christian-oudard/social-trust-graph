@@ -31,3 +31,8 @@ evidence(em). test(em,sm1,weights). refrains(em,lie). issued(em,0).
 expect(assured(kh,h1)). expect(unassured(kh,h2)).          % time decay, no event
 expect(assured(km,k1)). expect(unassured(km,k2)).          % no decay; event invalidates
 reject(swap(h0,h1)). reject(swap(h1,h2)). expect(swap(k1,k2)).
+% Audit: silence is not conformance. The machine's steps before the swap have complete
+% attested records; the swapped step does not. The person can never be fully recorded.
+evidence(r0). record(r0,k0). evidence(r1). record(r1,k1).
+expect(clear(km,6)). reject(clear(km,7)).
+reject(clear(kh,1)).

@@ -1,25 +1,29 @@
 %% core.lp: coordination ontology, executable core.
 %%
-%% Fragment: stratified Datalog with negation and integer comparison.
-%% No choice rules, disjunction, or aggregates, so every rule here maps 1:1 onto a
-%% Rust Datalog engine (ascent / crepe). Choice rules appear only in check files.
+%% Fragment: Datalog with negation and integer comparison; no choice rules, disjunction
+%% or aggregates (those appear only in checks/). The program is TIME-stratified: every
+%% negated literal on a derived relation refers to the same or an earlier step of a
+%% relation lower in the step's dependency order, so it evaluates as a per-step fold in
+%% a stratified engine (see ../rust). It is not stratified at the predicate level.
 %%
 %% Six sorts. Everything else is a relation between them or derived.
 %%   principal(P)    who commitments are attributed to        kind(P, person|org|machine)
 %%   role(R)         a position with a charter, filled over time by principals
-%%   invocation(I)   one step of execution: which (lineage) + when + what it ran + what it did
-%%   substrate(S)    content-addressed configuration: part(S, Slot, Hash)
-%%   commitment(C)   directed deontic unit; mode achieve | avoid | power
-%%   evidence(E)     attested record (of an invocation) or test (of substrate content)
+%%   invocation(I)   one step of execution: which (lineage), when, what it ran, what it did
+%%   substrate(S)    content-addressed configuration           part(S, Slot, Hash)
+%%   commitment(C)   directed deontic unit                     mode achieve | avoid | power
+%%   evidence(E)     attested test of content, sanitization, or complete record
 %%
-%% Base relations supplied by a scenario (the adjudicator's accepted facts):
-%%   at(I,T) runs(I,S) does(I,A) edge(I1,I2,K)  K in {continue, copy, merge}
-%%   learns(I,X)  with(I,Q)  act_name(A,N) act_amount(A,X)
-%%   debtor(C,X) creditor(C,Y) mode(C,M) content(C,A) deadline(C,T) trigger(C,C0)
-%%   reparation(C,C2)  created(C,I)  founded(C,T)  released(C,T)  revoked(C,T)
-%%   root(G,I) follows(G,K) pin(G,Slot,H) allows(G,N,Cap)  fills(P,R,T1,T2)
-%%   record(E,I)  test(E,S0,Slot) refrains(E,N) horizon(E,H) issued(E,T)
-%%   hyp(machine_party)  (the open question, stated as a switch)
+%% Base relations (a scenario is the adjudicator's accepted record of these):
+%%   lineage     at(I,T) runs(I,S) edge(I1,I2,K)  K in {continue, copy, merge}
+%%   conduct     does(I,A) with(I,Q) learns(I,X)
+%%   acts        act_name(A,N) act_amount(A,X) act_obj(A,O) exclusive(O) act_info(A,X) act_target(A,Q)
+%%   commitment  debtor(C,X) creditor(C,Y) mode(C,M) content(C,A) deadline(C,T) pin(C,Slot,H)
+%%               trigger(C,C0|A) reparation(C,C2) created(C,I) founded(C,T) released(C,T)
+%%   grant       root(G,I) follows(G,K) allows(G,N,Cap) revoked(G,T)     (mode power)
+%%   role        fills(P,R,T1,T2)
+%%   evidence    test(E,S0,Slot) refrains(E,N) issued(E,T) horizon(E,H) clean(E,S,X) record(E,I)
+%%   open        hyp(machine_party)    the party-vs-delegate question, as a switch
 
 #const horizon = 12.
 time(0..horizon).
@@ -88,9 +92,8 @@ acts_for(I,A,P) :- covered(G,I), debtor(G,P), within(G,A).
 acts_for(I,A,R) :- grant(G), debtor(G,R), role(R), within(G,A), fills(P,R,T1,T2),
                    at(I,T), T1 <= T, T < T2, acts_for(I,P).
 
-% A created commitment is valid iff its content is within the creator's authority for
-% its debtor (principal debtor), or the creator acts for the current filler of the
-% debtor role. Delegating is itself an act named 'delegate'.
+% A created commitment is valid iff its content is within the creator's authority for its
+% debtor. A grant is valid iff its creator may delegate for the grantor.
 valid_creation(C) :- created(C,I), debtor(C,P), principal(P), content(C,A), acts_for(I,A,P), not grant(C).
 % a role commitment must be within the ROLE's powers, not merely the filler's own: a
 % coordinator cannot bind its successors to anything outside the charter
@@ -101,14 +104,17 @@ can_delegate(I,P) :- covered(G,I), debtor(G,P), scope(G,all,_).
 ultra_vires(C) :- created(C,_), not valid_creation(C).
 
 % ============================================================================
-% 3. Holding, binding, roles. Commitments live in the registry, not the substrate:
-%    no rule below mentions runs/part, so no substrate change can end a commitment.
+% 3. Holding, binding, roles. Commitments live in the registry, not the substrate: once
+%    in force, whether a commitment holds or binds never depends on content (runs/part).
 % ============================================================================
 
-% conditional commitments (Singh's antecedent) detach when their trigger is violated;
-% this is how reparations and bonds are represented.
+% Conditional commitments (Singh's antecedent) detach when their trigger occurs: either
+% another commitment is violated (reparations, bonds) or the creditor side performs an act.
 detached(C,T) :- live(C,T), not has_trigger(C).
 detached(C,T) :- live(C,T), trigger(C,C0), violated(C0,T0), T0 < T.   % strictly later: time-stratified
+% or when someone acting for the creditor does the trigger act (an offer is accepted)
+detached(C,T) :- live(C,T), trigger(C,A), act_name(A,_), creditor(C,Q), does(I,A), acts_for(I,A,Q),
+                 at(I,T0), T0 < T.
 has_trigger(C) :- trigger(C,_).
 
 % who is bound by C at T: the principal debtor, or the current filler of a role debtor
@@ -154,7 +160,8 @@ imputed(P,X) :- knows(I,X), acts_for(I,P).
 % audited: a complete attested record exists. For avoid commitments, silence is not
 % conformance; clear means every invocation the debtor answered for was audited.
 audited(I) :- record(_,I).
-unaudited_exposure(C,T) :- mode(C,avoid), bound(C,P,T0), T0 <= T, acts_for(I,P), at(I,T0), not audited(I), time(T).
+unaudited_exposure(C,T) :- mode(C,avoid), content(C,A), bound(C,P,T0), T0 <= T, acts_for(I,A,P), at(I,T0),
+                           not off_pin(C,I), not audited(I), time(T).
 clear(C,T) :- mode(C,avoid), detached(C,T), not violated_by_time(C,T), not unaudited_exposure(C,T).
 violated_by_time(C,T) :- violated(C,T0), time(T), T0 <= T.
 

@@ -15,8 +15,8 @@ type_error(10,"part(S,_,_), not substrate(S)") :- part(S,_,_), not substrate(S).
 type_error(11,"edge(I1,I2,_), not invocation(I1)") :- edge(I1,I2,_), not invocation(I1).
 type_error(12,"edge(I1,I2,_), not invocation(I2)") :- edge(I1,I2,_), not invocation(I2).
 type_error(13,"edge(I1,I2,K), K != continue, K != copy, K != merge") :- edge(I1,I2,K), K != continue, K != copy, K != merge.
-type_error(14,"edge(I1,I2,_), at(I1,T1), at(I2,T2), T2 <= T1.          % lineage runs forward in time") :- edge(I1,I2,_), at(I1,T1), at(I2,T2), T2 <= T1.          % lineage runs forward in time.
-type_error(15,"edge(I,I2,continue), edge(I,I3,continue), I2 != I3.     % at most one continuation") :- edge(I,I2,continue), edge(I,I3,continue), I2 != I3.     % at most one continuation.
+type_error(14,"edge(I1,I2,_), at(I1,T1), at(I2,T2), T2 <= T1") :- edge(I1,I2,_), at(I1,T1), at(I2,T2), T2 <= T1.          % lineage runs forward in time.
+type_error(15,"edge(I,I2,continue), edge(I,I3,continue), I2 != I3") :- edge(I,I2,continue), edge(I,I3,continue), I2 != I3.     % at most one continuation.
 type_error(16,"mode(C,M), not commitment(C)") :- mode(C,M), not commitment(C).
 type_error(17,"commitment(C), not mode(C,_)") :- commitment(C), not mode(C,_).
 type_error(18,"mode(C,M), M != achieve, M != avoid, M != power") :- mode(C,M), M != achieve, M != avoid, M != power.
@@ -30,7 +30,7 @@ type_error(25,"commitment(C), not created(C,_), not founded(C,_)") :- commitment
 type_error(26,"created(C,I), not invocation(I)") :- created(C,I), not invocation(I).
 type_error(27,"root(G,_), not grant(G)") :- root(G,_), not grant(G).
 type_error(28,"grant(G), debtor(G,P), principal(P), not root(G,_)") :- grant(G), debtor(G,P), principal(P), not root(G,_).
-type_error(29,"trigger(C,C0), not commitment(C0)") :- trigger(C,C0), not commitment(C0).
+type_error(29,"trigger(C,X), not commitment(X), not act_name(X,_)") :- trigger(C,X), not commitment(X), not act_name(X,_).
 type_error(30,"reparation(C,C2), not trigger(C2,C)") :- reparation(C,C2), not trigger(C2,C).
 type_error(31,"fills(P,R,_,_), not principal(P)") :- fills(P,R,_,_), not principal(P).
 type_error(32,"fills(P,R,_,_), not role(R)") :- fills(P,R,_,_), not role(R).

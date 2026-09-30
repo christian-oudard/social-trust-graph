@@ -59,6 +59,13 @@ MUTANTS = [
      "slot_mismatch(E,S) :- test(E,S0,Slot), part(S0,Slot,H), part(S,Slot,H2), H != H2."),
     ("overcommit ignores exclusivity", "act_obj(A1,O), act_obj(A2,O), exclusive(O), bound(C1,P,T), bound(C2,P,T).",
      "act_obj(A1,O), act_obj(A2,O), bound(C1,P,T), bound(C2,P,T)."),
+    ("offers detach on anyone's act", "detached(C,T) :- live(C,T), trigger(C,A), act_name(A,_), creditor(C,Q), does(I,A), acts_for(I,A,Q),",
+     "detached(C,T) :- live(C,T), trigger(C,A), act_name(A,_), creditor(C,Q), does(I,A),"),
+    ("rollback retracts offers", "", "ended_by(C,T) :- created(C,I), rollback(I2), ancestor(I,I2), at(I2,T0), time(T), T >= T0."),
+    ("silence is conformance", "clear(C,T) :- mode(C,avoid), detached(C,T), not violated_by_time(C,T), not unaudited_exposure(C,T).",
+     "clear(C,T) :- mode(C,avoid), detached(C,T), not violated_by_time(C,T)."),
+    ("scrub unknows principal", "imputed(P,X) :- knows(I,X), acts_for(I,P).",
+     "imputed(P,X) :- knows(I,X), acts_for(I,P), not scrubbed_later(P,X).\nscrubbed_later(P,X) :- scrubbed(I,X), acts_for(I,P)."),
     ("rollback not detected", "rollback(I) :- runs(I,S), ancestor(I0,I), runs(I0,S), edge(I1,I,_), runs(I1,S1), S1 != S.", ""),
 ]
 

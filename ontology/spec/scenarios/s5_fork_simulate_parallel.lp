@@ -79,3 +79,35 @@ expect(assured(kq,qn2)).
 expect(ultra_vires(saleo2)). reject(overcommitted(ola,saleo1,saleo2)).
 expect(knows(o1,y1)). reject(knows(o1s,y1)). reject(knows(o3,y1)). reject(violated(confo,5)).
 expect(covered(go,o3)). reject(covered(go,o1)).
+
+%% ---- S5b. Rollback-and-retry, and probing from an uncovered fork ----
+% Nia offers Q2 a deal, rolls its negotiator back to before the offer, and re-offers
+% cheaper (the resettable-party exploit). The first offer is still Nia's: Q2 accepts it.
+% Ola probes Q2 from a copy its custody grant does not follow: the probe can extract
+% but cannot bind, and nobody answers for its "offer" unless the model itself stands.
+substrate(snx). part(snx,weights,wn). part(snx,memory,mnx).
+substrate(sq2). part(sq2,weights,wq2).
+commitment(gq2). mode(gq2,power). debtor(gq2,q2). root(gq2,qq). follows(gq2,continue). allows(gq2,all,0). founded(gq2,0).
+invocation(qq). at(qq,6). runs(qq,sq2).
+act_name(o100,sell_other). act_amount(o100,100). act_name(o80,sell_other). act_amount(o80,80).
+act_name(acc1,accept). act_name(acc2,accept2).
+invocation(n2b). at(n2b,3). runs(n2b,snx). edge(n2,n2b,copy).       % a retry branch
+invocation(n2c). at(n2c,5). runs(n2c,sn).  edge(n2b,n2c,continue).     % rolled back
+commitment(off1). mode(off1,achieve). debtor(off1,nia). creditor(off1,q2). content(off1,o100).
+  trigger(off1,acc1). deadline(off1,10). created(off1,n2b).
+commitment(off2). mode(off2,achieve). debtor(off2,nia). creditor(off2,q2). content(off2,o80).
+  trigger(off2,acc2). deadline(off2,10). created(off2,n2c).
+does(qq,acc1).
+expect(rollback(n2c)). expect(detached(off1,7)). expect(bound(off1,nia,7)). reject(detached(off2,7)).
+
+principal(mo). kind(mo,machine).
+commitment(gmo). mode(gmo,power). debtor(gmo,mo). root(gmo,o0). follows(gmo,continue). follows(gmo,copy). follows(gmo,merge). allows(gmo,all,0). founded(gmo,0).
+invocation(probe). at(probe,3). runs(probe,so). edge(o0,probe,copy). with(probe,q2).
+commitment(offp). mode(offp,achieve). debtor(offp,ola). creditor(offp,q2). content(offp,o80). deadline(offp,10). created(offp,probe).
+reject(acts_for(probe,ola)). expect(ultra_vires(offp)).
+expect(party, answerer(offp,mo)). expect(delegate, unanswerable(offp)).
+% an "acceptance" by someone not acting for the offeree does not detach the offer
+does(qn2,acc2).
+reject(detached(off2,7)).
+% the sanitized merge cut the instance-level flow, but Ola as principal still knows y1
+expect(imputed(ola,y1)).

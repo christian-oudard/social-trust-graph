@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Run every scenario against core.lp under both answers to the party-vs-delegate question.
+"""Run every scenario against core.lp under each answer to the party-vs-delegate question.
 
-Scenario files state expectations as facts over quoted atoms:
-    expect(A).            A must be derived under both hypotheses
-    reject(A).            A must not be derived under either hypothesis
-    expect(H, A) / reject(H, A)   same, only under hypothesis H in {party, delegate}
+Scenario files state expectations as facts over atoms:
+    expect(A).            A must be derived under every hypothesis
+    reject(A).            A must not be derived under any hypothesis
+    expect(H, A) / reject(H, A)   same, only under hypothesis H in {delegate, actor, party}
 Each run must have exactly one answer set (the core is deterministic).
 
 Check files (checks/*.lp) search for counterexamples with choice rules. A check passes
@@ -19,7 +19,7 @@ HERE = Path(__file__).parent
 CORE = HERE / "core.lp"
 TYPES = HERE / "types.lp"
 CHECK_CONSTS = ("horizon=4",)
-HYPS = {"party": "hyp(machine_party).", "delegate": ""}
+HYPS = {"delegate": "hyp(delegate).", "actor": "hyp(actor).", "party": "hyp(party)."}
 
 
 def solve(files, extra="", consts=(), limit=2):

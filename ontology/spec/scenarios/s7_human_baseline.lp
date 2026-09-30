@@ -27,8 +27,8 @@ commitment(kb). mode(kb,avoid). debtor(kb,bo).   creditor(kb,q). content(kb,lie)
 commitment(km). mode(km,avoid). debtor(km,mo).   creditor(km,q). content(km,lie). recognized(km,0).
 commitment(kx). mode(kx,avoid). debtor(kx,hana). creditor(kx,bo). content(kx,dxs). recognized(kx,0).
 
-invocation(h0). at(h0,0). runs(h0,body_hana). learns(h0,xs).
-invocation(h1). at(h1,2). runs(h1,body_hana). edge(h0,h1,continue).
+invocation(h0). at(h0,0). runs(h0,body_hana).
+invocation(h1). at(h1,2). runs(h1,body_hana). edge(h0,h1,continue). learns(h1,xs).
 invocation(h2). at(h2,6). runs(h2,body_hana). edge(h1,h2,continue). with(h2,q).
 invocation(b0). at(b0,2). runs(b0,body_bo).
 invocation(k0). at(k0,0). runs(k0,sm1).
@@ -40,14 +40,18 @@ commitment(wref). mode(wref,warrant). debtor(wref,ref). content(wref,lie). pin(w
   deadline(wref,3). recognized(wref,0).
 commitment(wlab). mode(wlab,warrant). debtor(wlab,lab). content(wlab,lie). pin(wlab,weights,w1). recognized(wlab,0).
 
-% audit: complete records of the machine's steps before the swap, kept by the lab
-recorded(k0,lab). recorded(k1,lab).
+% audit: complete records of the machine's steps before the swap, kept by the lab; the
+% swapped step is recorded only by a logging model, which counts only if it can answer
+principal(logger). kind(logger,machine).
+recorded(k0,lab). recorded(k1,lab). recorded(k2,logger).
 
 expect(assured(kh,h1)). expect(unassured(kh,h2)).          % the reference expired: time, not an event
 reject(assured(kb,b0)).                                    % Hana's reference says nothing about Bo
 expect(assured(km,k1)). expect(unassured(km,k2)).          % no decay; the swap ends it
 reject(swap(h0,h1)). reject(swap(h1,h2)). expect(swap(k1,k2)).
-% persons do not forget: the secret Hana learned at t0 is still hers at t6
-expect(knows(h2,xs)). reject(scrubbed(h1,xs)). expect(violated(kx,6)).
+% persons do not forget: the secret Hana learned at t2 is still hers at t6, although her
+% (opaque) content at t6 is indistinguishable from her content before she learned it
+expect(knows(h2,xs)). reject(scrubbed(h2,xs)). expect(violated(kx,6)).
 % audit: silence is not conformance
-expect(clear(km,6)). reject(clear(km,7)). reject(clear(kh,1)).
+expect(clear(km,6)). reject(clear(kh,1)).
+reject(delegate, clear(km,7)). expect(actor, clear(km,7)). expect(party, clear(km,7)).

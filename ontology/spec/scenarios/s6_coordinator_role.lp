@@ -69,3 +69,8 @@ expect(delegate, vacant(coord,6)). expect(delegate, defection(pub,board,6)). rej
 expect(actor, defection(pub,mc,6)). expect(party, defection(pub,mc,6)).
 expect(answered_breach(pub,6)).
 reject(detached(ralloc,10)). reject(violated(ralloc,10)).
+% a promise made TO a machine (cf. published commitments to preserve retired models'
+% weights): it binds only if machines can hold claims
+act_name(keep,preserve_weights).
+commitment(pres). mode(pres,avoid). debtor(pres,board). creditor(pres,mc). content(pres,keep). recognized(pres,0).
+expect(delegate, void(pres)). expect(actor, void(pres)). expect(party, in_force(pres)).

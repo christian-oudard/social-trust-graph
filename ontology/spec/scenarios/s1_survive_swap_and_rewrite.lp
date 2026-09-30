@@ -3,7 +3,8 @@
 %% memory is then rewritten (it forgets the promise), its weights are swapped, it sells
 %% the data, and finally it is rolled back to the original content.
 %% Enforcement, from drift-exposed to drift-invariant: Alice's own reparation, a surety's
-%% bond, and collateral (a conditional power Alice gave Bob to execute her reparation).
+%% bond, and a power given as security (Restatement (Third) of Agency 3.12): a conditional
+%% power Alice gave Bob to execute her reparation.
 
 principal(alice). kind(alice,person).
 principal(bob).   kind(bob,person).
@@ -60,7 +61,7 @@ commitment(rep). mode(rep,achieve). debtor(rep,alice). creditor(rep,bob). conten
 commitment(bnd). mode(bnd,achieve). debtor(bnd,ins). creditor(bnd,bob). content(bnd,pay_ins).
   trigger(bnd,nda). deadline(bnd,8). reparation(nda,bnd). recognized(bnd,1).
 does(ins1,pay_ins).
-% (3) collateral: a power over Alice's payment, held in Bob's lineage, live only on breach
+% (3) a power given as security: a power over Alice's payment, held in Bob's lineage, live only on breach
 commitment(gcol). mode(gcol,power). debtor(gcol,alice). created(gcol,alice0).
   creditor(gcol,bob). root(gcol,bob0). follows(gcol,continue). allows(gcol,pay_bob,0). trigger(gcol,nda).
 % after the repair Bob tries to collect again and to create a new debt in Alice's name

@@ -1,8 +1,9 @@
 %% X2 (regressions from review R3). Responsibility cannot be shed.
 %% (a) Fork-and-disown: Erin's agent learns Q's secret, copies itself (within her scope),
 %%     and the copy leaks it. The copy cannot bind Erin, but she answers for it.
-%% (b) Mere continuation: a vendor's agent defaults; a fresh org is recognized over the
-%%     very next step of the same lineage and inherits the open defection.
+%% (b) Continuity of enterprise (cf. successor liability's mere-continuation and Turner
+%%     tests): a vendor's agent defaults; a fresh org takes over operation of the very next
+%%     step of the same lineage and inherits the open defection for good-standing purposes.
 %% (c) A vacancy is the appointer's: an office cannot shed a duty by emptying itself.
 
 principal(erin). kind(erin,person). principal(q). kind(q,person). principal(r). kind(r,person).

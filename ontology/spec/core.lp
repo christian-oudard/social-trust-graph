@@ -19,7 +19,8 @@
 %% and from the next step: creating (created), releasing (releases), revoking (revokes),
 %% appointing (appoints), copying (copy edges), swapping and rewriting (content change,
 %% made by the parent or by an external changed_by). What is not an act is recognized:
-%% recognized(C,T) is the adjudicator's rule of recognition.
+%% recognized(C,T): valid under the adjudicator's rule of recognition (Hart), not created
+%% by any act in the record.
 %%
 %% Base relations (a scenario is the adjudicator's accepted record of these):
 %%   lineage     at(I,T) runs(I,S) part(S,Slot,H) edge(I1,I2,continue|copy) changed_by(I2,J) operator(I,P)
@@ -33,12 +34,13 @@
 time(0..horizon).
 
 % ============================================================================
-% 0. Capacities: the party-vs-delegate question. Two Hohfeldian capacities:
-%    owe (bear duties, own one's conduct, answer) and claim (hold rights, confer powers).
+% 0. Capacities: the party-vs-delegate question. Two capacities, in the spirit of Kurki's
+%    bundle theory of legal personhood: owe (bear duties, bind oneself, answer) and claim
+%    (hold rights, confer powers).
 % ============================================================================
 
 cap(owe). cap(claim).
-bundle(actor,owe).                                % duties without rights
+bundle(actor,owe).                                % duties without rights, plus self-binding
 bundle(party,owe). bundle(party,claim).           % delegate: the empty bundle
 capacity(P,C) :- kind(P,person), cap(C).
 capacity(P,C) :- kind(P,org), cap(C).
@@ -91,22 +93,25 @@ start(C,T) :- recognized(C,T).
 % VITIATION: an invocation steered by someone who does not run it (fraud, duress, prompt
 % injection, or a foreign change of its content) cannot change the registry in favour of a
 % party that steered it: such creations, releases, revocations, triggers and appointments
-% are void (a simplification: the law makes most of these voidable at the victim's option).
+% are treated as void. A deliberate simplification: law makes fraud and duress by threat
+% voidable at the victim's option (R2d Contracts 164, 175) and protects a good-faith
+% counterparty against third-party fraud; here only acts favouring the steerer fall.
 steered(I,Q) :- induced(I,Q), not op(I,Q).
 steered(I2,Q) :- changed(_,I2,_), changer(J,I2), op(J,Q), not op(I2,Q).
 party(C,Q) :- debtor(C,Q).
 party(C,Q) :- creditor(C,Q).
 party(G,Q) :- scoped(G), root(G,R), op(R,Q).
 vitiated(I,C) :- steered(I,Q), party(C,Q).
-% release: an act of the creditor's side, void if also made for the debtor (a dual agent)
+% release: an act of the creditor's side, void if also made for the debtor (a dual agent;
+% a simplification: law allows dual agency with informed consent)
 ended_by(C,T) :- releases(I,C), at(I,T0), time(T), T > T0, creditor(C,Q), acts_for(I,releasing,Q),
                  debtor(C,P), not acts_for(I,P), not vitiated(I,C).
 % revocation by the grantor's side; never of a security, directly or by cascade
 ended_by(G,T) :- revokes(I,G), at(I,T0), time(T), T > T0, debtor(G,P), acts_for(I,revoking,P), not security(G),
                  not vitiated(I,G).
 ended_by(G2,T) :- parent_grant(G2,G1), ended_by(G1,T), start(G2,T0), T > T0, not security(G2).
-% a warranty expires after its deadline; a security ends with the obligation it secures
-% (Restatement (Third) of Agency 3.12-3.13)
+% a warranty expires after its deadline; a power given as security ends with the obligation
+% it secures (Restatement (Third) of Agency 3.12-3.13)
 ended_by(W,T) :- mode(W,warrant), deadline(W,D), time(T), T > D.
 ended_by(G,T) :- security(G), trigger(G,C), ended_by(C,T).
 ended_by(G,T) :- security(G), trigger(G,C), mode(C,achieve), fulfilled(C,T0), time(T), T > T0.
@@ -156,7 +161,8 @@ eff_off_pin(G2,I) :- parent_grant(G2,G1), eff_off_pin(G1,I), not security(G2).
 covered(G,I) :- in_lineage(G,I), not eff_off_pin(G,I), at(I,T), detached(G,T).
 
 % the authority a delegation is made under: the unique candidate, or the one it cites
-% (a creator holding several candidate authorities must cite one, as a UCAN cites its proof)
+% (a creator holding several candidate authorities must cite one, as a ZCAP-LD capability names its
+% parentCapability)
 candidate_parent(G2,G1) :- scoped(G2), created(G2,I), covered(G1,I), grant(G1), not security(G1),
                            debtor(G1,P), debtor(G2,P), may_delegate(G1).
 cites(G2) :- under(G2,_).
@@ -207,8 +213,11 @@ conduct_of(I,A,P) :- secures(I,A,P), does(I,A).
 exposed(I,P) :- answers_for(I,P).
 exposed(I,P) :- acts_for(I,P).
 
-% Creation. Out-of-scope promises bind nobody: the registry makes every scope public, so
-% there is no apparent authority and no warranty of authority.
+% Creation. Out-of-scope promises bind nobody. By stipulation the registry is the only
+% manifestation of authority and every party is deemed to have notice of it, as if the
+% parties had agreed to it as their attribution procedure (cf. UNCITRAL MLAC Art 7(1)).
+% Positive law usually refuses such deemed notice (CA 2006 s.40; Dir. 2017/1132 Art 9(2);
+% RUPA 303(f)), so apparent authority and warranty of authority are excluded by design.
 can_grant(I,P) :- covered(G,I), grant(G), not security(G), debtor(G,P), may_delegate(G).
 valid_creation(C) :- created(C,I), debtor(C,E), content(C,A), acts_for(I,A,E), not scoped(C), not vitiated(I,C).
 valid_creation(G) :- scoped(G), created(G,I), debtor(G,P), can_grant(I,P), not vitiated(I,G).

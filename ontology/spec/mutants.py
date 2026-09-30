@@ -121,6 +121,9 @@ def job(item):
 
 def main(argv):
     core = (HERE / "core.lp").read_text()
+    if killed(core):   # a failing baseline would make every mutant look killed
+        print("baseline fails: fix the suite before measuring mutants")
+        return 1
     jobs = []
     for name, old, new in SEMANTIC:
         if old and old not in core:

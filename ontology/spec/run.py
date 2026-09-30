@@ -10,6 +10,9 @@ Each run must have exactly one answer set (the core is deterministic).
 Check files (checks/*.lp) search for counterexamples with choice rules. A check passes
 when it is UNSAT (no counterexample within bounds), after a non-vacuity run (the same
 generator without the violation constraint) is SAT.
+
+Type cases (typecases/*.lp) are ill-typed on purpose: each states expect_error(N), and
+passes when exactly those type errors are derived under every hypothesis.
 """
 import sys
 from pathlib import Path
@@ -79,10 +82,26 @@ def run_check(path):
     return True
 
 
+def run_typecase(path):
+    ok = True
+    for hyp, fact in HYPS.items():
+        models = solve([CORE, TYPES, path], fact)
+        if len(models) != 1:
+            print(f"  [{hyp}] expected 1 answer set, got {len(models)}")
+            ok = False
+            continue
+        got = {a.arguments[0].number for a in models[0] if a.name == "type_error"}
+        want = {a.arguments[0].number for a in models[0] if a.name == "expect_error"}
+        if got != want:
+            print(f"  [{hyp}] type errors {sorted(got)}, expected {sorted(want)}")
+            ok = False
+    return ok
+
+
 def main(argv):
     only = argv[1:]
     results = []
-    for kind, fn in (("scenarios", run_scenario), ("checks", run_check)):
+    for kind, fn in (("scenarios", run_scenario), ("checks", run_check), ("typecases", run_typecase)):
         for p in sorted((HERE / kind).glob("*.lp")):
             if only and not any(o in p.name for o in only):
                 continue

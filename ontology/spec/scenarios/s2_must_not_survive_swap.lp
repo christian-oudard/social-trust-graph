@@ -1,6 +1,7 @@
 %% S2. A commitment that must NOT survive a model swap.
 %% Bob evaluated weights w1 and permitted Alice's agent to process his data only while it
-%% runs w1 (the sub-processor analog, GDPR Art. 28(2)). Alice owes Bob a standing
+%% runs w1 (analogous to a controller's specific prior authorisation of a named
+%% sub-processor, GDPR Art. 28(2); data-subject consent does not attach to processors). Alice owes Bob a standing
 %% prohibition on processing his data. Bob's consent is a PERMIT: it shares a grant's
 %% scope fields (root, follows, pins, allows) but its only effect is to excuse. It does
 %% not make the agent Bob's agent, so Bob neither answers for it nor knows what it knows.
@@ -62,8 +63,8 @@ reject(imputed(bob,alice_secret)). expect(imputed(alice,alice_secret)).
 %% ---- S2b. Debtor-side forms of the same pin mechanism ----
 % (i) a version warranty: Alice promises Carol that her agent, while on w1, will not
 %     emit unsafe output. After the swap, unsafe output is not a breach of THIS promise.
-% (ii) a performer-specific duty: the audit must be produced by w1 (Carol's substantial
-%     interest in the performer, Restatement (Second) 318(2)). The swapped agent's audit
+% (ii) a performer-specific duty: the audit must be produced by w1 (the promise's terms
+%     require that performer: Restatement (Second) of Contracts 318(1)). The swapped agent's audit
 %     does not count, so the duty is violated at its deadline (self-induced impossibility).
 % (iii) a change envelope: a second permit from Bob covering two tested configurations,
 %     {w1, m1} and {w2, m2}, survives this swap, but not the untested mix {w2, m1}.

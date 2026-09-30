@@ -88,3 +88,6 @@ type_error(93,"evidence is now a warranty (mode warrant)") :- evidence(_).
 type_error(94,"evidence is now a warranty (mode warrant)") :- test(_,_,_).
 type_error(95,"record/2 is now recorded(I,K)") :- record(_,_).
 type_error(96,"clean/3 is now a warranty with content carry(X)") :- clean(_,_,_).
+% an opaque slot cannot be seen to change, so no default author is credible: API weights do
+% not change themselves. Name the maker (possibly the parent) with changed_by.
+type_error(68,"a change to opaque content needs its maker: changed_by") :- changed(_,I2,Sl), slot(I2,Sl,opaque(_)), not external(I2).

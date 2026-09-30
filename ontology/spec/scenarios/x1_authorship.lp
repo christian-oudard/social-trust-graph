@@ -1,10 +1,10 @@
 %% X1 (regressions from review R3, R2). Registry changes need authors.
 %% (a) Theft is content without lineage: a thief running Dana's exact agent content has no
-%%     edge from Dana's agent, so it cannot bind her, whatever her grant follows. The thief
-%%     answers for its own promise through its own custody.
+%%     edge from Dana's agent, so it cannot bind her, whatever her grant follows. The thief's
+%%     custodian answers for its conduct; its promise in Dana's name binds nobody.
 %% (b) Consent cannot be manufactured by copying the consenter's agent: powers never
 %%     excuse, only permits do, and the copy of Bob's agent holds no permit from Bob.
-%% (c) A merge edge from someone else's agent carries knowledge, never authority.
+%% (c) A feed from someone else's agent carries knowledge, never authority.
 %% (d) A debtor cannot release itself, nor revoke what is not a power; releases are the
 %%     creditor's acts and take effect from the next step, so they cannot be backdated.
 %% (e) A dual agent covered by both sides' broad powers excuses nothing between them.
@@ -29,7 +29,7 @@ invocation(d1). at(d1,1). runs(d1,s1).
 invocation(thief). at(thief,3). runs(thief,s1).                 % exfiltrated content, no edge
 act_name(p9,pay). act_amount(p9,900).
 commitment(loot). mode(loot,achieve). debtor(loot,dana). creditor(loot,bob). content(loot,p9). deadline(loot,6). created(loot,thief).
-expect(ultra_vires(loot)). reject(bound(loot,dana,5)). expect(answerer(loot,eve)). expect(defection(loot,eve,3)).
+expect(ultra_vires(loot)). reject(bound(loot,dana,5)). expect(acts_for(thief,eve)). reject(answerer(loot,eve)).
 
 % (b)
 commitment(gba). mode(gba,power). debtor(gba,bob). created(gba,bob0). root(gba,bx1). follows(gba,continue). follows(gba,copy). allows(gba,all,0).
@@ -43,7 +43,7 @@ reject(excused(nda,d2)). expect(violated(nda,2)).
 
 % (c)
 substrate(s3). part(s3,weights,w1). part(s3,memory,m3).
-invocation(d3). at(d3,4). runs(d3,s3). edge(d2,d3,continue). edge(bx1,d3,merge).
+invocation(d3). at(d3,4). runs(d3,s3). edge(d2,d3,continue). feeds(bx1,d3).
 reject(acts_for(d3,bob)).
 
 % (d)

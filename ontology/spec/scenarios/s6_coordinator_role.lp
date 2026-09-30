@@ -1,7 +1,8 @@
 %% S6. A coordinator is a role, not a kind of party.
 %% A commons has a coordinator office with a charter: powers (allocate slots) and duties
 %% (never favour a member; publish the schedule by t6). The office is held by Alice
-%% (person), then by a machine mc, then jointly by Dan and Eve (persons). Commitments made
+%% (person), then by a machine mc, then jointly by Dan and Eve (persons), each appointed
+%% by the board's act. Commitments made
 %% in the office bind whoever holds it when performance is due; breaches stay with whoever
 %% held it when they happened. A board appoints and answers for vacancies. Whether mc can
 %% hold office at all is the open question: under 'delegate' it cannot owe, so t4..t7 is
@@ -26,7 +27,13 @@ commitment(gd). mode(gd,power). debtor(gd,dan).   root(gd,dan0).   follows(gd,co
 commitment(ge). mode(ge,power). debtor(ge,eve).   root(ge,eve0).   follows(ge,continue). allows(ge,all,0). recognized(ge,0).
 commitment(gm). mode(gm,power). debtor(gm,mc).    root(gm,mc0).    follows(gm,continue). allows(gm,all,0). recognized(gm,0).
 
-fills(alice,coord,0,4). fills(mc,coord,4,8). fills(dan,coord,8,13). fills(eve,coord,8,13).
+% appointments are the board's acts, effective from the next step
+substrate(body_board). part(body_board,self,opaque(board)).
+commitment(gboard). mode(gboard,power). debtor(gboard,board). root(gboard,bd0). follows(gboard,continue). allows(gboard,all,0). recognized(gboard,0).
+invocation(bd0). at(bd0,0). runs(bd0,body_board).
+invocation(bd1). at(bd1,3). runs(bd1,body_board). edge(bd0,bd1,continue).
+invocation(bd2). at(bd2,7). runs(bd2,body_board). edge(bd1,bd2,continue).
+appoints(bd0,alice,coord,4). appoints(bd1,mc,coord,8). appoints(bd2,dan,coord,13). appoints(bd2,eve,coord,13).
 
 % the charter: role powers and role duties
 commitment(gcoord). mode(gcoord,power). debtor(gcoord,coord). allows(gcoord,give_slot,0). recognized(gcoord,0).
@@ -57,7 +64,7 @@ commitment(ralloc). mode(ralloc,achieve). debtor(ralloc,coord). creditor(ralloc,
 %% ---- expectations ----
 expect(valid_creation(alloc)). expect(bound(alloc,dan,9)). expect(bound(alloc,eve,9)). reject(bound(alloc,alice,9)).
 expect(fulfilled(alloc,9)).
-expect(ultra_vires(bad)). expect(answerer(bad,alice)). expect(defection(bad,alice,1)).
+expect(ultra_vires(bad)). reject(answerer(bad,alice)).     % beyond the charter: binds nobody
 expect(violated(nofav,2)). expect(defection(nofav,alice,2)). reject(defection(nofav,dan,2)).
 reject(in_good_standing(alice,10)).
 % co-holders: an act breaches for its performer only

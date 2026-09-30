@@ -14,7 +14,7 @@ commitment(gc). mode(gc,power). debtor(gc,carol). root(gc,c0). follows(gc,contin
 invocation(a0). at(a0,0). runs(a0,ba). invocation(b0). at(b0,0). runs(b0,bb). invocation(c0). at(c0,0). runs(c0,bc).
 
 % (a)
-role(coord). fills(alice,coord,0,13). fills(bob,coord,0,13). appointer(coord,carol).
+role(coord). appointer(coord,carol). appoints(c0,alice,coord,13). appoints(c0,bob,coord,13).
 commitment(gcoord). mode(gcoord,power). debtor(gcoord,coord). allows(gcoord,give,0). recognized(gcoord,0).
   trigger(gcoord,never).                % the charter power sleeps until an act that never comes
 act_name(never,approve_role). act_name(gv,give). act_name(fav,favor).

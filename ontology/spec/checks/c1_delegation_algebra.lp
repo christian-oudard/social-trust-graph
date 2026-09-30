@@ -3,8 +3,10 @@
 %% grant above it: pins, caps, followed edge kinds, and liveness (revocation cascades).
 %% The chain and each caveat are re-derived here without the core's helper relations.
 #include "lib/world.lp".
-ref_parent(G2,G1) :- scoped(G2), created(G2,I), covered(G1,I), mode(G1,power), debtor(G1,P), debtor(G2,P),
+ref_cand(G2,G1) :- scoped(G2), created(G2,I), covered(G1,I), mode(G1,power), not security(G1), debtor(G1,P), debtor(G2,P),
                      delegable(G1).
+ref_parent(G2,G1) :- ref_cand(G2,G1), not under(G2,_).
+ref_parent(G2,G1) :- ref_cand(G2,G1), under(G2,G1).
 delegable(G) :- allows(G,delegate,_). delegable(G) :- allows(G,all,_).
 cx_parent(G2,G1) :- parent_grant(G2,G1), not ref_parent(G2,G1).
 cx_parent(G2,G1) :- ref_parent(G2,G1), not parent_grant(G2,G1).
@@ -12,7 +14,8 @@ anc(G2,G1) :- ref_parent(G2,G1).
 anc(G3,G1) :- anc(G3,G2), ref_parent(G2,G1).
 unrestricted(G) :- allows(G,all,_).
 % pins
-cx_pin(I,G,G0) :- covered(G,I), anc(G,G0), pin(G0,Sl,H), not slot(I,Sl,H).
+% (a security is the holder's: it performs the grantor's duty and inherits no pins)
+cx_pin(I,G,G0) :- covered(G,I), anc(G,G0), pin(G0,Sl,H), not slot(I,Sl,H), not security(G).
 % caps
 cx_cap(I,A,G0) :- covered(G,I), mode(G,power), anc(G,G0), not unrestricted(G0), act_name(A,N),
                   within(G,A), act_amount(A,X), allows(G0,N,C0), X > C0.

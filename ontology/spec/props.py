@@ -9,7 +9,7 @@ Each property compares two evaluations of core.lp that should agree (or be order
                 content changes nothing about attribution, binding or breach
   P3 history    appending a later invocation never retracts a past fact (no retroactivity)
   P4 fork law   adding a copy that breaks a prohibition creates a breach iff the debtor
-                answers for the copy (a power covers it, or the copying was in scope)
+                answers for the copy (a power covers it, or covered the original)
 """
 import random
 import sys
@@ -19,6 +19,17 @@ import clingo
 HERE = Path(__file__).parent
 FILES = [HERE / "core.lp", HERE / "types.lp"]
 WATCH = ("acts_for", "valid_creation", "bound", "violated", "defection", "live", "covered")
+
+
+def good_world(rng, **kw):
+    """A random world that is well-typed (e.g. no ambiguous, uncited delegation)."""
+    while True:
+        w = World(rng, **kw)
+        try:
+            evaluate(w.facts())
+            return w
+        except AssertionError:
+            continue
 
 
 def evaluate(facts, hyp="delegate"):
@@ -65,14 +76,14 @@ class World:
             self.runs[y] = f"s{rng.randint(1,2)}_{y}"
             if y > 1:
                 for x in rng.sample(range(1, y), k=min(y - 1, rng.choice([1, 1, 2]))):
-                    kind = rng.choice(["continue", "copy", "merge"])
+                    kind = rng.choice(["continue", "copy", "feed"])
                     if kind == "continue" and x in cont_used:
                         kind = "copy"
                     if kind == "continue":
                         cont_used.add(x)
                     self.edges.append((x, y, kind))
         for (x, y, kind) in self.edges:
-            L(f"edge(i{x},i{y},{kind}).")
+            L(f"feeds(i{x},i{y})." if kind == "feed" else f"edge(i{x},i{y},{kind}).")
         for a in (1, 2, 3):
             L(f"act_name(a{a},pay). act_amount(a{a},{a}).")
         L("act_name(sp,spam).")
@@ -107,7 +118,7 @@ class World:
                 L(f"pin(c{c},weights,w{rng.randint(1,2)}).")
             if rng.random() < 0.3:
                 L(f"commitment(r{c}). mode(r{c},achieve). debtor(r{c},{rng.choice([P, 'm'])}). creditor(r{c},{Q}). "
-                  f"content(r{c},a1). trigger(r{c},c{c}). reparation(c{c},r{c}). deadline(r{c},{n}). recognized(r{c},0).")
+                  f"content(r{c},a1). trigger(r{c},c{c}). deadline(r{c},{n}). recognized(r{c},0).")
             if rng.random() < 0.2:
                 L(f"releases({rng.choice(creators)},c{c}).")
         for x in range(1, n + 1):
@@ -140,7 +151,7 @@ def human_only(atoms):
 
 
 def p1_standing(rng):
-    w = World(rng)
+    w = good_world(rng)
     d, a, p = (evaluate(w.facts(), h) for h in ("delegate", "actor", "party"))
     assert human_only(d) == human_only(a) == human_only(p), "the machine question changed a human-only commitment"
     ans = lambda x: {t for t in pick(x, ("answerer",)) if t.split("(")[1].split(",")[0] in
@@ -149,14 +160,14 @@ def p1_standing(rng):
 
 
 def p2_content(rng):
-    w = World(rng, pins=False, learning=False)
+    w = good_world(rng, pins=False, learning=False)
     other = {y: f"s{rng.randint(1,2)}_{y}" for y in w.runs}
     a, b = evaluate(w.facts()), evaluate(w.facts(other))
     assert pick(a, WATCH) == pick(b, WATCH), "content changed attribution or binding without pins"
 
 
 def p3_history(rng):
-    w = World(rng)
+    w = good_world(rng)
     before = evaluate(w.facts())
     n = w.n + 1
     w.lines.append(f"invocation(i{n}). at(i{n},{n}). edge(i{rng.randint(1,w.n)},i{n},copy).")
@@ -168,18 +179,18 @@ def p3_history(rng):
 
 
 def p4_fork_law(rng):
-    w = World(rng, pins=False, learning=False)
+    w = good_world(rng, pins=False, learning=False)
     # a prohibition on q by p, broken only by a fresh copy of i1
     n = w.n + 1
     # grants that allow 'spam' make the copy's act attributable in about half the worlds
     w.lines.append("commitment(kz). mode(kz,avoid). debtor(kz,p). creditor(kz,q). content(kz,sp). recognized(kz,0).")
-    follow = " follows(dz,copy)." if rng.random() < 0.5 else ""
-    w.lines.append(f"commitment(dz). mode(dz,power). debtor(dz,p). created(dz,p0). root(dz,i1). allows(dz,spam,0).{follow}")
+    if rng.random() < 0.5:   # half the time p covers the original, so answers for its copy
+        follow = " follows(dz,copy)." if rng.random() < 0.5 else ""
+        w.lines.append(f"commitment(dz). mode(dz,power). debtor(dz,p). created(dz,p0). root(dz,i1). allows(dz,spam,0). under(dz,gp).{follow}")
     w.lines.append(f"invocation(i{n}). at(i{n},{n}). edge(i1,i{n},copy). does(i{n},sp).")
     w.runs[n] = w.runs[1].split("_")[0] + f"_{n}"
     atoms = evaluate(w.facts())
-    answered_by_p = (f"acts_for(i{n},sp,p)" in atoms or f"resp_only(i{n},p)" in atoms) \
-        and f"excused(kz,i{n})" not in atoms
+    answered_by_p = f"answers_for(i{n},p)" in atoms and f"excused(kz,i{n})" not in atoms
     assert (f"violated(kz,{n})" in atoms) == answered_by_p, "fork law: breach iff p answers for the copy"
     return answered_by_p
 
@@ -202,8 +213,8 @@ if __name__ == "__main__":
                 failed += 1
                 break
         else:
-            if prop in NONVACUOUS and hits < trials // 10:
-                print(f"{prop.__name__}: vacuous, antecedent held in only {hits}/{trials} trials")
+            if prop in NONVACUOUS and not (trials // 10 <= hits <= trials - trials // 10):
+                print(f"{prop.__name__}: one-sided, antecedent held in {hits}/{trials} trials")
                 failed += 1
                 continue
             print(f"{prop.__name__:12} {trials} trials pass" + (f" ({hits} non-trivial)" if prop in NONVACUOUS else ""))

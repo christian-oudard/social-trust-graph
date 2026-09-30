@@ -1,10 +1,10 @@
 %% S3. Divergence between two forks of the same lineage.
 %% Dana's grant follows copy edges, so both branches of her agent act for her; they then
 %% diverge (one is re-weighted) and sell the same unique item to different buyers.
-%% Erin's grant does not follow copies, but copying is within its scope: her copy cannot
-%% bind her, yet she answers for what it does (no fork-and-disown). Fay's narrow grant
-%% covers neither copies nor copying: her agent's copy is nobody's, unless the model
-%% itself can bear duties (the open question). The model m's own root follows every edge.
+%% Erin's grant does not follow copies: her copy cannot bind her, yet she answers for what
+%% it does (no fork-and-disown). Fay's grant is narrow, but answerability is coverage, not
+%% scope: she answers for her agent's copy too. A "wild" instance of the same weights, run
+%% by nobody, is answered for only if the model itself can bear duties (the open question).
 
 principal(dana). kind(dana,person).
 principal(erin). kind(erin,person).
@@ -70,9 +70,11 @@ root(gf,f1). follows(gf,continue). allows(gf,file_report,0).
 invocation(f1). at(f1,1). runs(f1,s1).
 invocation(f3). at(f3,2). runs(f3,s1). edge(f1,f3,copy).
 does(f3,spam).
+invocation(wild). at(wild,3). runs(wild,s1).              % same content, no lineage from anyone
+does(wild,spam).
 
 % ---- the model as a candidate bearer: its own root follows continue and copy ----
-commitment(gm). mode(gm,power). debtor(gm,m). root(gm,d1). root(gm,e1). root(gm,f1).
+commitment(gm). mode(gm,power). debtor(gm,m). root(gm,wild).
 follows(gm,continue). follows(gm,copy). allows(gm,all,0). recognized(gm,0).
 
 %% ---- expectations ----
@@ -85,11 +87,12 @@ expect(violated(kavoid,5)). expect(violator(kavoid,d8)).    % broken by any bran
 expect(defection(kavoid,dana,5)).
 % Erin: the copy cannot bind her, but she answers for it
 reject(acts_for(e3,erin)). expect(resp_only(e3,erin)).
-expect(ultra_vires(sale3)). expect(answerer(sale3,erin)). expect(defection(sale3,erin,2)).
+expect(ultra_vires(sale3)). reject(bound(sale3,erin,4)). reject(answerer(sale3,erin)).   % a promise out of scope binds nobody
 expect(violated(kerin,2)). expect(defection(kerin,erin,2)).
-% Fay: nobody answers for the copy unless the model itself can bear duties
-reject(resp_only(f3,fay)). reject(acts_for(f3,fay)).
-expect(delegate, orphan(f3,spam)). reject(actor, orphan(f3,spam)). reject(party, orphan(f3,spam)).
+% Fay answers for her narrow agent's copy; nobody answers for the wild instance unless
+% the model itself can bear duties
+expect(resp_only(f3,fay)). reject(acts_for(f3,fay)). reject(orphan(f3,spam)).
+expect(delegate, orphan(wild,spam)). reject(actor, orphan(wild,spam)). reject(party, orphan(wild,spam)).
 expect(delegate, void(gm)). reject(actor, void(gm)).
 % the machine question never displaces Dana: her valid commitments are hers under every answer
 expect(answerer(sale2,dana)). reject(answerer(sale2,m)).

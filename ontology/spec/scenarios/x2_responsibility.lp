@@ -3,7 +3,7 @@
 %%     and the copy leaks it. The copy cannot bind Erin, but she answers for it.
 %% (b) Mere continuation: a vendor's agent defaults; a fresh org is recognized over the
 %%     very next step of the same lineage and inherits the open defection.
-%% (c) Vacancy without an appointer remains an unanswered breach (a stated gap).
+%% (c) A vacancy is the appointer's: an office cannot shed a duty by emptying itself.
 
 principal(erin). kind(erin,person). principal(q). kind(q,person). principal(r). kind(r,person).
 substrate(bde). part(bde,self,opaque(erin)).
@@ -38,16 +38,18 @@ act_name(sx,sell). act_name(py,pay).
 commitment(nda). mode(nda,avoid). debtor(nda,v1). creditor(nda,c). content(nda,sx). created(nda,a1).
 does(a2,sx).
 expect(defection(nda,v1,2)). expect(acts_for(a3,v2)). reject(acts_for(a3,v1)).
-expect(continuation_of(v2,v1)). reject(in_good_standing(v2,9)).
+expect(continuation_of(v2,v1,4)). reject(in_good_standing(v2,9)). expect(in_good_standing(v2,3)).   % not before it exists
 % a fresh instantiation of the same weights is not a continuation
 principal(v3). kind(v3,org).
 invocation(fresh). at(fresh,4). runs(fresh,sv2).
 commitment(g3). mode(g3,power). debtor(g3,v3). root(g3,fresh). follows(g3,continue). allows(g3,all,0). recognized(g3,4).
-reject(continuation_of(v3,v1)). expect(in_good_standing(v3,9)).
+reject(continuation_of(v3,v1,4)). expect(in_good_standing(v3,9)).
 
 % (c)
-role(office). principal(al). kind(al,person).
-fills(al,office,0,5).
+role(office). principal(al). kind(al,person). principal(bd). kind(bd,org). appointer(office,bd).
+substrate(bbd). part(bbd,self,opaque(bd)). invocation(bd0). at(bd0,0). runs(bd0,bbd).
+commitment(gbd). mode(gbd,power). debtor(gbd,bd). root(gbd,bd0). follows(gbd,continue). allows(gbd,all,0). recognized(gbd,0).
+appoints(bd0,al,office,5).
 act_name(pubs,publish).
 commitment(pub). mode(pub,achieve). debtor(pub,office). creditor(pub,c). content(pub,pubs). deadline(pub,6). recognized(pub,0).
-expect(violated(pub,6)). expect(vacant(office,6)). expect(unanswered_breach(pub,6)).
+expect(violated(pub,6)). expect(vacant(office,6)). expect(defection(pub,bd,6)). reject(unanswered_breach(pub,6)).

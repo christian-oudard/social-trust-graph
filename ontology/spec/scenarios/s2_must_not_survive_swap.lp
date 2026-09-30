@@ -84,3 +84,24 @@ reject(violated(war,3)). expect(off_pin(war,a3)).
 reject(fulfilled(aud,5)). expect(violated(aud,5)). expect(defection(aud,alice,5)).
 expect(covered(cb2,a1)). expect(covered(cb2,a3)). expect(excused(nb2,a3)). reject(violated(nb2,3)).
 reject(covered(cb2,a4)). expect(violated(nb2,4)).
+
+%% ---- S2c. Dormant versus terminated ----
+% A pin makes a permit DORMANT: rolled back to w1, Bob's first permit covers again.
+% A resolutive condition TERMINATES: Bob's third permit ends at the swap (until swapping)
+% and stays ended after the rollback; Dora's consent ends at a memory rewrite.
+invocation(a5). at(a5,5). runs(a5,s1). edge(a4,a5,continue).   % rolled back to s1
+does(a5,pb). does(a5,pb3). does(a5,pd).
+act_name(pb3,process_bob3). act_name(pd,process_dora).
+principal(dora). kind(dora,person). substrate(body_dora). part(body_dora,self,opaque(dora)).
+commitment(gdo). mode(gdo,power). debtor(gdo,dora). root(gdo,dora0). follows(gdo,continue). allows(gdo,all,0). recognized(gdo,0).
+invocation(dora0). at(dora0,0). runs(dora0,body_dora).
+commitment(nb3). mode(nb3,avoid). debtor(nb3,alice). creditor(nb3,bob). content(nb3,pb3). recognized(nb3,0).
+commitment(nd). mode(nd,avoid). debtor(nd,alice). creditor(nd,dora). content(nd,pd). recognized(nd,0).
+commitment(cb3). mode(cb3,permit). debtor(cb3,bob). created(cb3,bob0). until(cb3,swapping).
+  root(cb3,a1). follows(cb3,continue). pin(cb3,weights,w1). allows(cb3,process_bob3,0).
+commitment(cd). mode(cd,permit). debtor(cd,dora). created(cd,dora0). until(cd,rewriting).
+  root(cd,a1). follows(cd,continue). allows(cd,process_dora,0).
+does(a1,pd).
+expect(covered(cb,a5)). expect(excused(nb,a5)).                 % dormant, then revived
+expect(ended_by(cb3,3)). reject(covered(cb3,a5)). expect(violated(nb3,5)).   % terminated
+expect(excused(nd,a1)). expect(ended_by(cd,2)). expect(violated(nd,5)).

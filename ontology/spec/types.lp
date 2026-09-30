@@ -6,16 +6,28 @@ slotname(weights). slotname(prompt). slotname(scaffold). slotname(tools).
 slotname(memory). slotname(context). slotname(self).
 
 % principals and roles
+type_error(5,"appoints(I,P,R,_): P principal, R role") :- appoints(_,P,_,_), not principal(P).
+type_error(6,"appoints(I,P,R,_): P principal, R role") :- appoints(_,_,R,_), not role(R).
+type_error(9,"every role needs an appointer") :- role(R), not appointer(R,_).
+% a person's content is exactly one opaque self slot, along its whole lineage
+person_inv(I) :- root(G,I), recognized(G,_), debtor(G,P), kind(P,person).
+person_inv(I2) :- person_inv(I1), edge(I1,I2,_).
+type_error(29,"a person's content is one opaque self slot") :- person_inv(I), slot(I,Sl,_), Sl != self.
+type_error(56,"a person's content is one opaque self slot") :- person_inv(I), not opaque_inv(I).
 type_error(1,"kind(P,_), not principal(P)") :- kind(P,_), not principal(P).
 type_error(2,"principal(P), not kind(P,_)") :- principal(P), not kind(P,_).
 type_error(3,"kind(P,K), K not person|org|machine") :- kind(P,K), K != person, K != org, K != machine.
 type_error(4,"role(X), principal(X): a coordinator is a role, never a kind of party") :- role(X), principal(X).
-type_error(5,"fills(P,R,_,_) not principal/role") :- fills(P,R,_,_), not principal(P).
-type_error(6,"fills(P,R,_,_) not principal/role") :- fills(P,R,_,_), not role(R).
 type_error(7,"appointer(R,Q) not role/principal") :- appointer(R,Q), not role(R).
 type_error(8,"appointer(R,Q) not role/principal") :- appointer(R,Q), not principal(Q).
 
 % invocations and content
+type_error(19,"edge kind not continue|copy (a merge is feeds: knowledge, never authority)") :- edge(_,_,K), K != continue, K != copy.
+type_error(22,"a self slot cannot be copied") :- edge(I1,_,copy), slot(I1,self,_).
+type_error(57,"changed_by(I2,J): invocations") :- changed_by(I2,J), not invocation(J).
+type_error(58,"changed_by(I2,J): I2 must have a parent") :- changed_by(I2,_), not edge(_,I2,_).
+type_error(59,"deadline beyond the horizon") :- deadline(_,D), not time(D).
+type_error(60,"until(C,A): A must be an act") :- until(_,A), not act_name(A,_).
 type_error(10,"at(I,_), not invocation(I)") :- at(I,_), not invocation(I).
 type_error(11,"invocation(I), not at(I,_)") :- invocation(I), not at(I,_).
 type_error(12,"invocation(I) without content") :- invocation(I), not slot(I,_,_).
@@ -25,12 +37,8 @@ type_error(15,"slot outside the closed vocabulary") :- slot(_,Sl,_), not slotnam
 type_error(16,"two hashes in one slot (hash layered parts together)") :- slot(I,Sl,H1), slot(I,Sl,H2), H1 != H2.
 type_error(17,"edge endpoint not an invocation") :- edge(I1,_,_), not invocation(I1).
 type_error(18,"edge endpoint not an invocation") :- edge(_,I2,_), not invocation(I2).
-type_error(19,"edge kind not continue|copy|merge") :- edge(_,_,K), K != continue, K != copy, K != merge.
 type_error(20,"lineage runs forward in time") :- edge(I1,I2,_), at(I1,T1), at(I2,T2), T2 <= T1.
 type_error(21,"at most one continuation") :- edge(I,I2,continue), edge(I,I3,continue), I2 != I3.
-type_error(22,"opaque content cannot be copied") :- edge(I1,_,copy), opaque_inv(I1).
-type_error(23,"learning must change observable content") :- learns(I,_), edge(I,I2,_), not opaque_inv(I),
-                                                           not changed(I,I2,_).
 type_error(24,"feeds endpoint not an invocation") :- feeds(I1,I2), not invocation(I1).
 type_error(25,"feeds endpoint not an invocation") :- feeds(I1,I2), not invocation(I2).
 type_error(26,"does(I,_), not invocation(I)") :- does(I,_), not invocation(I).
@@ -53,7 +61,6 @@ type_error(41,"created(C,I), not invocation(I)") :- created(_,I), not invocation
 type_error(42,"scoped instrument with a principal debtor needs a root") :- scoped(G), debtor(G,P), principal(P), not root(G,_).
 type_error(43,"root(G,_), not scoped(G)") :- root(G,_), not scoped(G).
 type_error(44,"trigger target is neither commitment nor act") :- trigger(_,X), not commitment(X), not act_name(X,_).
-type_error(45,"reparation(C,C2) without trigger(C2,C)") :- reparation(C,C2), not trigger(C2,C).
 type_error(46,"warranty without pin: a warranty's range is its pin") :- mode(W,warrant), not has_pin(W).
 type_error(47,"warranty over opaque content must expire") :- mode(W,warrant), pin(W,_,_,opaque(_)), not deadline(W,_).
 type_error(48,"pin on a slot outside the vocabulary") :- pin(_,_,Sl,_), not slotname(Sl).
@@ -61,12 +68,15 @@ type_error(49,"releases(I,C) not invocation/commitment") :- releases(_,C), not c
 type_error(50,"revokes(I,G): G must be scoped") :- revokes(_,G), not scoped(G).
 type_error(52,"invocation after the horizon") :- at(_,T), not time(T).
 type_error(53,"recognized and created: pick one") :- recognized(C,_), created(C,_).
-type_error(54,"follows merge: a merge carries knowledge, never authority") :- follows(_,merge).
 type_error(55,"feeds run forward in time") :- feeds(I1,I2), at(I1,T1), at(I2,T2), T2 <= T1.
+type_error(61,"ambiguous delegation: cite the parent with under/2") :- candidate_parent(G,G1), candidate_parent(G,G3), G1 < G3, not cites(G).
+type_error(62,"under/2 must cite a candidate parent") :- under(G,G1), not candidate_parent(G,G1).
+type_error(63,"a commitment is created once") :- created(C,I1), created(C,I2), I1 != I2.
 type_error(51,"pin/3 with two hashes for one slot: use pin/4 configurations") :- pin(C,Sl,H1), pin(C,Sl,H2), H1 != H2.
 
 % retired v0.1 vocabulary, flagged so old scenarios fail loudly
 type_error(90,"founded/2 is now recognized/2") :- founded(_,_).
+type_error(97,"fills/4 is now the act appoints(I,P,R,Tend)") :- fills(_,_,_,_).
 type_error(91,"released/2 is now the act releases(I,C)") :- released(_,_).
 type_error(92,"revoked/2 is now the act revokes(I,G)") :- revoked(_,_).
 type_error(93,"evidence is now a warranty (mode warrant)") :- evidence(_).

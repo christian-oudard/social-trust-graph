@@ -18,7 +18,7 @@ import clingo
 HERE = Path(__file__).parent
 CORE = HERE / "core.lp"
 TYPES = HERE / "types.lp"
-CHECK_CONSTS = ("horizon=5",)
+CHECK_CONSTS = ("horizon=7", "n=5", "g=3", "k=3")
 HYPS = {"delegate": "hyp(delegate).", "actor": "hyp(actor).", "party": "hyp(party)."}
 
 

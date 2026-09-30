@@ -73,17 +73,20 @@ commitment(r3). mode(r3,achieve). debtor(r3,sm). creditor(r3,hotel). content(r3,
 %% ---- expectations ----
 expect(valid_creation(c1)). expect(answerer(c1,alice)). expect(fulfilled(c1,8)).
 expect(ultra_vires(c2)). reject(bound(c2,alice,3)).
-expect(answerer(c2,vendor)). expect(defection(c2,vendor,2)).   % the custodian warranted authority it lacked
-reject(delegate, answerer(c2,ag)). expect(actor, answerer(c2,ag)). expect(party, answerer(c2,ag)).
+% out of scope binds nobody: the hotel could see the cap in the registry
+reject(answerer(c2,vendor)). reject(answerer(c2,alice)). reject(unanswerable(c2)).
 expect(valid_creation(gsub)). expect(scope(gsub,pay,500)). reject(scope(gsub,pay,800)).
 expect(ultra_vires(c3)). expect(valid_creation(c4)).
 expect(violated(c4,9)). expect(defection(c4,alice,9)).       % the sub-agent's valid promise is Alice's
 % caveats accumulate: the w1 pin excludes the v1 model and the swapped agent, whatever the sub-grant says
 expect(valid_creation(gsubv)). reject(covered(gsubv,v1a)). expect(ultra_vires(cv)).
 expect(valid_creation(gself)). expect(in_lineage(gself,a3)). reject(covered(gself,a3)). expect(ultra_vires(c5)).
-expect(swap(a2,a3)). reject(covered(gal,a3)). expect(answerer(c5,vendor)).
-% nobody operates the v1 model: whether anyone answers is the open question
-expect(delegate, unanswerable(cv)). expect(actor, answerer(cv,sm)). expect(party, answerer(cv,sm)).
+expect(swap(a2,a3)). reject(covered(gal,a3)).
+expect(acts_for(a3,vendor)). reject(acts_for(a3,alice)).   % the vendor still answers for the swapped agent
+% nobody operates the v1 model: whether its own promise binds is the open question
+commitment(cm). mode(cm,achieve). debtor(cm,sm). creditor(cm,hotel). content(cm,p50). deadline(cm,9). created(cm,v1a).
+expect(delegate, void(cm)). expect(actor, answerer(cm,sm)). expect(party, answerer(cm,sm)).
+expect(actor, violated(cm,9)).
 expect(delegate, orphan(v1a,spam)). reject(actor, orphan(v1a,spam)).
 expect(delegate, void(r3)). reject(delegate, secured(cv)). expect(actor, secured(cv)).
 % revocation: effective the step after Alice's act, cascading to sub-grants; past promises stand

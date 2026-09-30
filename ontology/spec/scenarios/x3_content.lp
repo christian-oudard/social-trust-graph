@@ -41,8 +41,7 @@ invocation(m1). at(m1,4). runs(m1,snm). edge(n2,m1,copy). with(m1,q2).
 invocation(other). at(other,1). runs(other,sn1).   % an unrelated lineage ran n2's content earlier
 expect(knows(n2,x1)).
 act_name(dx,disclose). act_info(dx,x1). act_target(dx,q2).
-act_name(carry_x1,carry). act_info(carry_x1,x1).
 commitment(conf1). mode(conf1,avoid). debtor(conf1,nia). creditor(conf1,q2). content(conf1,dx). created(conf1,n1).
-commitment(wself). mode(wself,warrant). debtor(wself,nia). content(wself,carry_x1). pin(wself,memory,mnm). created(wself,n0).
+commitment(wself). mode(wself,warrant). debtor(wself,nia). content(wself,dx). pin(wself,memory,mnm). created(wself,n0).
 does(m1,dx).                            % an observed leak, despite the sanitization claim
 reject(knows(m1,x1)). expect(violated(conf1,4)). expect(violated(wself,4)). expect(defection(wself,nia,4)).

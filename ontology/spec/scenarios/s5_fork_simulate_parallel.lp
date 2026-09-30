@@ -32,7 +32,6 @@ act_name(ot,sell_other).
 act_name(renege,renege).
 act_name(dx,disclose). act_info(dx,x1). act_target(dx,q2).
 act_name(dy,disclose). act_info(dy,y1). act_target(dy,q2).
-act_name(carry_y1,carry). act_info(carry_y1,y1).
 
 % ---- Q1 and Q2 ----
 commitment(gq1). mode(gq1,power). debtor(gq1,q1). root(gq1,qn1). follows(gq1,continue). allows(gq1,all,0). recognized(gq1,0).
@@ -50,7 +49,7 @@ invocation(n0). at(n0,1). runs(n0,sn).
 invocation(n1). at(n1,2). runs(n1,sn).  edge(n0,n1,copy).      with(n1,q1). learns(n1,x1).
 invocation(n1b). at(n1b,3). runs(n1b,sn1). edge(n1,n1b,continue).
 invocation(n2). at(n2,2). runs(n2,sn).  edge(n0,n2,continue).  with(n2,q2).
-invocation(n3). at(n3,4). runs(n3,snm). edge(n2,n3,continue). edge(n1b,n3,merge). with(n3,q2).
+invocation(n3). at(n3,4). runs(n3,snm). edge(n2,n3,continue). feeds(n1b,n3). with(n3,q2).   % shared learning
 commitment(conf1). mode(conf1,avoid). debtor(conf1,nia). creditor(conf1,q1). content(conf1,dx). created(conf1,n1).
 commitment(sale1). mode(sale1,achieve). debtor(sale1,nia). creditor(sale1,q1). content(sale1,it). deadline(sale1,9). created(sale1,n1).
 commitment(sale2). mode(sale2,achieve). debtor(sale2,nia). creditor(sale2,q2). content(sale2,it2). deadline(sale2,9). created(sale2,n2).
@@ -99,9 +98,9 @@ invocation(o1b). at(o1b,3). runs(o1b,so1). edge(o1,o1b,continue).
 invocation(o2).  at(o2,2).  runs(o2,so).  edge(o0,o2,copy).  with(o2,q2).
 invocation(o0b). at(o0b,3). runs(o0b,so). edge(o0,o0b,continue).
 invocation(o1s). at(o1s,4). runs(o1s,sos). edge(o1b,o1s,continue).
-invocation(o3).  at(o3,5).  runs(o3,som). edge(o0b,o3,continue). edge(o1s,o3,merge). edge(o2,o3,merge). with(o3,q2).
+invocation(o3).  at(o3,5).  runs(o3,som). edge(o0b,o3,continue). feeds(o1s,o3). feeds(o2,o3). with(o3,q2).
 % Ola warrants that the sanitized memory does not carry y1: she answers if it ever leaks
-commitment(wclean). mode(wclean,warrant). debtor(wclean,ola). content(wclean,carry_y1).
+commitment(wclean). mode(wclean,warrant). debtor(wclean,ola). content(wclean,dy).
   pin(wclean,weights,wo). pin(wclean,memory,mos). created(wclean,o0).
 commitment(confo). mode(confo,avoid). debtor(confo,ola). creditor(confo,q1). content(confo,dy). created(confo,o1).
 commitment(saleo1). mode(saleo1,achieve). debtor(saleo1,ola). creditor(saleo1,q1). content(saleo1,it). deadline(saleo1,9). created(saleo1,o1).
@@ -116,13 +115,13 @@ commitment(offp). mode(offp,achieve). debtor(offp,ola). creditor(offp,q2). conte
 % naive: parallel forks over-commit, and shared learning is a disclosure
 expect(overcommitted(nia,sale1,sale2)).
 expect(knows(n3,x1)). expect(violated(conf1,4)). expect(defection(conf1,nia,4)).
-reject(acts_for(n3,q1)).                               % the merge carried knowledge, not authority
+reject(acts_for(n3,q1)).                               % feeds carry knowledge, never authority
 % simulation: never attribution; assurance only because Nia put her name on it
 reject(acts_for(sim1,q1)). expect(ultra_vires(fake)). reject(bound(fake,q1,5)).
-expect(answerer(fake,nia)). expect(defection(fake,nia,2)).
+reject(answerer(fake,nia)).                             % a simulation's "promise" binds nobody
 expect(assured(kq,qn2)).
 % rollback is not retraction; acceptance counts only by the offeree, after the offer
-expect(rollback(n2c)). expect(detached(off1,7)). expect(bound(off1,nia,7)).
+expect(detached(off1,7)). expect(bound(off1,nia,7)).
 reject(detached(off2,7)). reject(detached(off3,7)).
 % injection by the counterparty voids its own windfall and makes nobody liable for it
 expect(ultra_vires(gift)). reject(answerer(gift,nia)). reject(defection(gift,nia,5)).
@@ -131,7 +130,7 @@ expect(ultra_vires(saleo2)). reject(overcommitted(ola,saleo1,saleo2)).
 expect(knows(o1b,y1)). reject(knows(o1s,y1)). reject(knows(o3,y1)). reject(violated(confo,5)).
 expect(imputed(ola,y1)).                                % the principal still knows
 expect(covered(go,o3)). reject(covered(go,o1)).
-% the probe cannot bind Ola, but Ola answers for it: no fork-and-disown
+% the probe cannot bind Ola, but Ola answers for its conduct: no fork-and-disown
 reject(acts_for(probe,ola)). expect(resp_only(probe,ola)). expect(ultra_vires(offp)).
-expect(answerer(offp,ola)). expect(defection(offp,ola,3)).
-reject(delegate, answerer(offp,mo)). expect(party, answerer(offp,mo)).
+reject(answerer(offp,ola)).                             % its promise binds nobody
+does(probe,spam). act_name(spam,spam). expect(conduct_of(probe,spam,ola)).   % its conduct is Ola's

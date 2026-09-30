@@ -26,6 +26,7 @@ type_error(19,"edge kind not continue|copy (a merge is feeds: knowledge, never a
 type_error(22,"a self slot cannot be copied") :- edge(I1,_,copy), slot(I1,self,_).
 type_error(57,"changed_by(I2,J): invocations") :- changed_by(I2,J), not invocation(J).
 type_error(58,"changed_by(I2,J): I2 must have a parent") :- changed_by(I2,_), not edge(_,I2,_).
+type_error(69,"changed_by(I2,J): the change is made before I2 runs") :- changed_by(I2,J), at(I2,T2), at(J,TJ), TJ >= T2.
 type_error(59,"deadline beyond the horizon") :- deadline(_,D), not time(D).
 type_error(60,"until(C,A): A must be an act") :- until(_,A), not act_name(A,_).
 type_error(10,"at(I,_), not invocation(I)") :- at(I,_), not invocation(I).
@@ -70,7 +71,8 @@ type_error(52,"invocation after the horizon") :- at(_,T), not time(T).
 type_error(53,"recognized and created: pick one") :- recognized(C,_), created(C,_).
 type_error(55,"feeds run forward in time") :- feeds(I1,I2), at(I1,T1), at(I2,T2), T2 <= T1.
 type_error(61,"ambiguous delegation: cite the parent with under/2") :- candidate_parent(G,G1), candidate_parent(G,G3), G1 < G3, not cites(G).
-type_error(62,"under/2 must cite a candidate parent") :- under(G,G1), not candidate_parent(G,G1).
+type_error(62,"under/2 must cite a power of the same grantor") :- under(G,G1), not mode(G1,power).
+type_error(62,"under/2 must cite a power of the same grantor") :- under(G,G1), debtor(G,P), not debtor(G1,P).
 type_error(63,"a commitment is created once") :- created(C,I1), created(C,I2), I1 != I2.
 type_error(64,"a power's pin must be observable: scope is public only if it can be checked") :- grant(G), pin(G,_,_,opaque(_)).
 type_error(65,"a security performs its reparation; it takes no resolutive condition") :- security(G), until(G,_).

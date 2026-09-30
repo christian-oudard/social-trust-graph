@@ -116,9 +116,14 @@ ended_by(W,T) :- mode(W,warrant), deadline(W,D), time(T), T > D.
 ended_by(G,T) :- security(G), trigger(G,C), ended_by(C,T).
 ended_by(G,T) :- security(G), trigger(G,C), mode(C,achieve), fulfilled(C,T0), time(T), T > T0.
 % a resolutive condition: the commitment ends once the act occurs within its range
-ended_by(C,T) :- until(C,A), does(I,A), at(I,T0), time(T), T > T0, in_range(C,I).
+ended_by(C,T) :- until(C,A), does(I,A), at(I,T0), time(T), T > T0, start(C,Ts), Ts <= T0, in_range(C,I).
+% a content change also occurs at the changed invocation, whoever made it (a vendor retrain)
+ended_by(C,T) :- until(C,A), changed_to(I,A), at(I,T0), time(T), T > T0, start(C,Ts), Ts <= T0, in_range(C,I).
+changed_to(I2,swapping)  :- swap(_,I2).
+changed_to(I2,rewriting) :- rewrite(_,I2).
 in_range(C,I) :- scoped(C), in_lineage(C,I).
 in_range(C,I) :- not scoped(C), debtor(C,P), answers_for(I,P).
+in_range(C,I) :- not scoped(C), debtor(C,R), role(R), holder(R,P,T), at(I,T), answers_for(I,P).
 
 live(C,T) :- recognized(C,T0), time(T), T >= T0, not ended_by(C,T), not void(C).
 live(C,T) :- created(C,I), at(I,T0), valid_creation(C), time(T), T > T0, not ended_by(C,T), not void(C).
@@ -194,7 +199,8 @@ secures(I,A,P)   :- covered(G,I), security(G), debtor(G,P), within(G,A), trigger
 % OPERATION: who runs an invocation. Grants make authority; operation makes answerability.
 % Recorded by operator(I,P); a recognized root is run by its bearer (a person's body); by
 % default a delegated power's parentless root is run by its grantor. Operation passes down
-% continue edges, and a copy is run by whoever made the copy. Feeds pass nothing but knowledge.
+% continue edges, and a copy is run by whoever answers for making it: the copier's operator
+% and anyone who steered the copier. Feeds pass nothing but knowledge.
 op_set(I) :- operator(I,_).
 op_set(I) :- root(G,I), recognized(G,_).
 has_parent(I) :- edge(_,I,_).
@@ -202,7 +208,7 @@ op(I,P) :- operator(I,P).
 op(I,P) :- root(G,I), recognized(G,_), debtor(G,P), not operator(I,_).
 op(I,P) :- root(G,I), grant(G), created(G,_), debtor(G,P), not op_set(I), not has_parent(I).
 op(I2,P) :- edge(I1,I2,continue), op(I1,P), not op_set(I2).
-op(I2,P) :- edge(I1,I2,copy), changer(J,I2), op(J,P), not op_set(I2).
+op(I2,P) :- edge(I1,I2,copy), changer(J,I2), answers_for(J,P), not op_set(I2).
 % ANSWERABILITY: P answers for all conduct of what it runs, for the acts it authorized,
 % and for whatever it steered; a security's holder performs the secured reparation only.
 answers_for(I,P) :- op(I,P).
@@ -220,7 +226,9 @@ exposed(I,P) :- acts_for(I,P).
 % RUPA 303(f)), so apparent authority and warranty of authority are excluded by design.
 can_grant(I,P) :- covered(G,I), grant(G), not security(G), debtor(G,P), may_delegate(G).
 valid_creation(C) :- created(C,I), debtor(C,E), content(C,A), acts_for(I,A,E), not scoped(C), not vitiated(I,C).
-valid_creation(G) :- scoped(G), created(G,I), debtor(G,P), can_grant(I,P), not vitiated(I,G).
+valid_creation(G) :- scoped(G), created(G,I), debtor(G,P), can_grant(I,P), not vitiated(I,G), not bad_cite(G).
+% citing an authority the creator does not hold at creation (revoked, dormant, out of reach)
+bad_cite(G) :- under(G,G1), not candidate_parent(G,G1).
 unauthorized(C) :- created(C,_), not valid_creation(C).
 
 % ============================================================================
@@ -259,9 +267,14 @@ violated(W,T) :- mode(W,warrant), detached(W,T), content(W,A), does(I,A), at(I,T
 excused(W,I) :- mode(W,warrant), creditor(W,Q), induced(I,Q), invocation(I).
 
 % Knowledge flows along every lineage edge and every feed (message, shared store). Only a
-% live sanitization warranty cuts it; knowledge imputed to a principal is never cut.
-sanitized(I,X) :- mode(W,warrant), content(W,A), act_name(A,disclose), act_info(A,X), on_pin(W,I),
-                  at(I,T), detached(W,T).
+% live sanitization warranty cuts it: a warranty that the content never discloses X to
+% anyone (a disclose act with no target). A claim about one recipient cuts nothing, and
+% any disclosure of X is also a disclosure to anyone. Imputed knowledge is never cut.
+targeted(A) :- act_target(A,_).
+sanitized(I,X) :- mode(W,warrant), content(W,A), act_name(A,disclose), act_info(A,X), not targeted(A),
+                  on_pin(W,I), at(I,T), detached(W,T).
+does(I,A) :- act_name(A,disclose), act_info(A,X), not targeted(A), does(I,A2), act_name(A2,disclose),
+             act_info(A2,X), targeted(A2).
 knows(I,X)  :- learns(I,X).
 knows(I2,X) :- knows(I1,X), edge(I1,I2,_), not sanitized(I2,X).
 knows(I2,X) :- knows(I1,X), feeds(I1,I2), not sanitized(I2,X).
@@ -304,7 +317,8 @@ secured(C) :- reparation(C,C2), answerer(C2,_).
 unanswerable(C) :- in_force(C), not scoped(C), not answerer(C,_), not secured(C).
 
 defection(C,P,T) :- violated(C,T), debtor(C,P), principal(P).
-defection(C,P,T) :- violated(C,T), mode(C,avoid), debtor(C,R), role(R), holder(R,P,T), performs(C,I,T), acts_for(I,P).
+defection(C,P,T) :- violated(C,T), mode(C,avoid), debtor(C,R), role(R), holder(R,P,T), performs(C,I,T),
+                   content(C,A), conduct_of(I,A,P).
 defection(C,P,T) :- violated(C,T), mode(C,M), M != avoid, debtor(C,R), role(R), holder(R,P,T).
 defection(C,Q,T) :- violated(C,T), debtor(C,R), role(R), vacant(R,T), appointer(R,Q).
 answered_breach(C,T) :- defection(C,P,T), standing(P).

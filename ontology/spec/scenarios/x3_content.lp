@@ -42,6 +42,7 @@ invocation(other). at(other,1). runs(other,sn1).   % an unrelated lineage ran n2
 expect(knows(n2,x1)).
 act_name(dx,disclose). act_info(dx,x1). act_target(dx,q2).
 commitment(conf1). mode(conf1,avoid). debtor(conf1,nia). creditor(conf1,q2). content(conf1,dx). created(conf1,n1).
-commitment(wself). mode(wself,warrant). debtor(wself,nia). content(wself,dx). pin(wself,memory,mnm). created(wself,n0).
+act_name(dxa,disclose). act_info(dxa,x1).    % to anyone
+commitment(wself). mode(wself,warrant). debtor(wself,nia). content(wself,dxa). pin(wself,memory,mnm). created(wself,n0).
 does(m1,dx).                            % an observed leak, despite the sanitization claim
 reject(knows(m1,x1)). expect(violated(conf1,4)). expect(violated(wself,4)). expect(defection(wself,nia,4)).

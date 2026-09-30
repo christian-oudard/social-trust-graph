@@ -23,7 +23,7 @@ BASE = {"principal", "kind", "role", "invocation", "at", "runs", "part", "substr
         "does", "with", "learns", "feeds", "induced", "recorded", "act_name", "act_amount", "act_obj",
         "exclusive", "act_info", "act_target", "commitment", "debtor", "creditor", "mode", "content",
         "deadline", "pin", "trigger", "until", "created", "recognized", "releases", "revokes", "root",
-        "follows", "allows", "under", "appointer", "appoints"}
+        "follows", "allows", "under", "appointer", "appoints", "operator"}
 
 
 def witness_worlds(check, k):

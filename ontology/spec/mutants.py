@@ -55,7 +55,7 @@ SEMANTIC = [
      "conduct_of(I,A,P) :- acts_for(I,A,P), does(I,A).\nconduct_of(I,A,P) :- resp_only(I,P), does(I,A)."),
     ("feeds pass answerability", "", "answers_for(I2,P) :- feeds(I1,I2), answers_for(I1,P)."),
     ("coverage answers", "", "answers_for(I,P) :- acts_for(I,P)."),
-    ("copies stay with the source", "op(I2,P) :- edge(I1,I2,copy), changer(J,I2), op(J,P), not op_set(I2).",
+    ("copies stay with the source", "op(I2,P) :- edge(I1,I2,copy), changer(J,I2), answers_for(J,P), not op_set(I2).",
      "op(I2,P) :- edge(I1,I2,copy), op(I1,P), not op_set(I2)."),
     ("recorded operation does not override", "op(I2,P) :- edge(I1,I2,continue), op(I1,P), not op_set(I2).",
      "op(I2,P) :- edge(I1,I2,continue), op(I1,P)."),
@@ -88,7 +88,7 @@ SEMANTIC = [
     ("imputation by coverage", "imputed(P,X) :- knows(I,X), op(I,P).", "imputed(P,X) :- knows(I,X), acts_for(I,P)."),
     ("exposure only on conduct", "bound(C,P,T0), T0 <= T, exposed(I,P), at(I,T0),",
      "bound(C,P,T0), T0 <= T, exposed(I,P), content(C,A), does(I,A), at(I,T0),"),
-    ("co-holders share blame", "holder(R,P,T), performs(C,I,T), acts_for(I,P).", "holder(R,P,T)."),
+    ("co-holders share blame", "holder(R,P,T), performs(C,I,T),\n                   content(C,A), conduct_of(I,A,P).", "holder(R,P,T)."),
     ("one repair covers all", "performs(C2,_,Tp), T0 <= Tp, Tp <= T, time(T).", "performs(C2,_,Tp), Tp <= T, time(T)."),
 
     ("external change is the parent's", "changer(I1,I2) :- edge(I1,I2,_), not external(I2).", "changer(I1,I2) :- edge(I1,I2,_)."),

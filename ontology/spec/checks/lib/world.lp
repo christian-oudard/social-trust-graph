@@ -31,7 +31,7 @@ ekind(continue;copy).
 { with(i(X),q) } :- ix(X).
 { induced(i(X),P) : tp(P) } 1 :- ix(X).
 { operator(i(X),P) : principal(P) } 1 :- ix(X).
-act_name(dq,disclose). act_info(dq,x). act_target(dq,q).
+act_name(dq,disclose). act_info(dq,x). act_target(dq,q). act_name(da,disclose). act_info(da,x).
 
 % delegated instruments: powers and permits, possibly conditional, possibly securities
 gx(1..g). commitment(d(G)) :- gx(G).
@@ -64,7 +64,7 @@ ck(1..k). commitment(c(C)) :- ck(C).
 creditor(c(C),q) :- debtor(c(C),p), not mode(c(C),warrant).
 creditor(c(C),p) :- debtor(c(C),q), not mode(c(C),warrant).
 creditor(c(C),p) :- debtor(c(C),r), not mode(c(C),warrant).
-1 { content(c(C),A) : act(A), A != ok ; content(c(C),dq) } 1 :- ck(C).
+1 { content(c(C),A) : act(A), A != ok ; content(c(C),dq) ; content(c(C),da) } 1 :- ck(C).
 1 { created(c(C),I) : invocation(I) ; recognized(c(C),0) } 1 :- ck(C).
 deadline(c(C),n) :- mode(c(C),achieve).
 pin(c(C),weights,1) :- mode(c(C),warrant).

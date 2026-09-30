@@ -2,8 +2,9 @@
 %% next unless one of these, re-derived here independently, occurred earlier: the
 %% creditor's un-injected, non-dual release; the grantor's un-injected revocation (never of
 %% a security); a cascade from a revoked ancestor (never onto a security); a warranty's
-%% expiry; the end or fulfilment of what a security secures; a resolutive act within range. Swaps, rewrites,
-%% copies, feeds, external changes and debtor-side acts are all generated; none may end one.
+%% expiry; the end or fulfilment of what a security secures; a resolutive act or content
+%% change within range. Swaps, rewrites, copies, feeds, external changes and debtor-side
+%% acts are all generated; none may end one otherwise.
 #include "lib/world.lp".
 anc(G2,G1) :- parent_grant(G2,G1).
 anc(G3,G1) :- anc(G3,G2), parent_grant(G2,G1).
@@ -22,6 +23,9 @@ legit_end(W,T) :- mode(W,warrant), deadline(W,D), time(T), T > D.
 legit_end(G,T) :- security(G), trigger(G,C), legit_end(C,T).
 legit_end(G,T) :- security(G), trigger(G,C), mode(C,achieve), fulfilled(C,T0), time(T), T > T0.
 legit_end(C,T) :- until(C,A), does(I,A), at(I,T0), time(T), T > T0, in_range(C,I).
+% the resolutive event is a change of the invocation's own content, by whomever
+legit_end(C,T) :- until(C,swapping), edge(I1,I2,_), slot(I1,weights,H1), slot(I2,weights,H2), H1 != H2,
+                  at(I2,T0), time(T), T > T0, in_range(C,I2).
 cx_dropped(C,T) :- live(C,T), time(T+1), not live(C,T+1), not legit_end(C,T+1).
 cx_revived(C,T) :- live(C,T0), T0 < T, not live(C,T), live(C,T+1).
 cx :- cx_dropped(_,_). cx :- cx_revived(_,_).

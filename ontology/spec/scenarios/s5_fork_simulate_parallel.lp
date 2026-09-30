@@ -100,7 +100,8 @@ invocation(o0b). at(o0b,3). runs(o0b,so). edge(o0,o0b,continue).
 invocation(o1s). at(o1s,4). runs(o1s,sos). edge(o1b,o1s,continue).
 invocation(o3).  at(o3,5).  runs(o3,som). edge(o0b,o3,continue). feeds(o1s,o3). feeds(o2,o3). with(o3,q2).
 % Ola warrants that the sanitized memory does not carry y1: she answers if it ever leaks
-commitment(wclean). mode(wclean,warrant). debtor(wclean,ola). content(wclean,dy).
+act_name(dya,disclose). act_info(dya,y1).    % to anyone
+commitment(wclean). mode(wclean,warrant). debtor(wclean,ola). content(wclean,dya).
   pin(wclean,weights,wo). pin(wclean,memory,mos). created(wclean,o0).
 commitment(confo). mode(confo,avoid). debtor(confo,ola). creditor(confo,q1). content(confo,dy). created(confo,o1).
 commitment(saleo1). mode(saleo1,achieve). debtor(saleo1,ola). creditor(saleo1,q1). content(saleo1,it). deadline(saleo1,9). created(saleo1,o1).

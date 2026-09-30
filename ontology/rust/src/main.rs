@@ -96,10 +96,18 @@ ascent! {
     ended_by(w, t) <-- now(t), mode(w, m), if *m == "warrant", deadline(w, d), if t > d;
     ended_by(g, t) <-- security(g), trigger(g, c), ended_by(c, t);
     ended_by(g, t) <-- now(t), security(g), trigger(g, c), mode(c, m), if *m == "achieve", fulfilled_h(c, t0), if t > t0;
-    ended_by(c, t) <-- now(t), until(c, a), does_past(i, a), at(i, t0), if t > t0, in_range(c, i);
+    ended_by(c, t) <-- now(t), until(c, a), does_past(i, a), at(i, t0), if t > t0, start(c, ts), if ts <= t0,
+                       in_range(c, i);
+    ended_by(c, t) <-- now(t), until(c, a), changed_to(i, a), at(i, t0), if t > t0, start(c, ts), if ts <= t0,
+                       in_range(c, i);
+    relation changed_to(S, S);
+    changed_to(i2, "swapping") <-- swap(_, i2);
+    changed_to(i2, "rewriting") <-- rewrite(_, i2);
     relation in_range(S, S);
     in_range(c, i) <-- scoped(c), in_lineage(c, i);
     in_range(c, i) <-- commitment(c), !scoped(c), debtor(c, p), answers_for(i, p);
+    in_range(c, i) <-- commitment(c), !scoped(c), debtor(c, r), role(r), holder_all(r, p, ti), at(i, ti),
+                       answers_for(i, p);
     live(c, t) <-- now(t), recognized(c, t0), if t >= t0, !ended_by(c, t), !void(c);
     live(c, t) <-- now(t), created(c, i), at(i, t0), if t > t0, valid_creation_h(c), !ended_by(c, t), !void(c);
 
@@ -173,7 +181,7 @@ ascent! {
     op(i, p) <-- root(g, i), recognized(g, _), debtor(g, p), !has_operator(i);
     op(i, p) <-- root(g, i), grant(g), created(g, _), debtor(g, p), !op_set(i), !has_parent(i);
     op(i2, p) <-- edge(i1, i2, k), if *k == "continue", op(i1, p), !op_set(i2);
-    op(i2, p) <-- edge(_, i2, k), if *k == "copy", changer(j, i2), op(j, p), !op_set(i2);
+    op(i2, p) <-- edge(_, i2, k), if *k == "copy", changer(j, i2), answers_for(j, p), !op_set(i2);
     answers_for(i, p) <-- op(i, p);
     answers_for(i, p) <-- induced(i, p);
     conduct_of(i, a, p) <-- answers_for(i, p), does(i, a);
@@ -195,7 +203,10 @@ ascent! {
     can_grant(i, p) <-- covered(g, i), grant(g), !security(g), debtor(g, p), may_delegate(g);
     valid_creation(c) <-- now(t), created(c, i), at(i, t), debtor(c, e), content(c, a), acts_for3(i, a, e),
                           !scoped(c), !vitiated(i, c);
-    valid_creation(g) <-- now(t), scoped(g), created(g, i), at(i, t), debtor(g, p), can_grant(i, p), !vitiated(i, g);
+    valid_creation(g) <-- now(t), scoped(g), created(g, i), at(i, t), debtor(g, p), can_grant(i, p), !vitiated(i, g),
+                          !bad_cite(g);
+    relation bad_cite(S);
+    bad_cite(g) <-- now(t), created(g, i), at(i, t), under(g, g1), !candidate_parent(g, g1);
     unauthorized(c) <-- now(t), created(c, i), at(i, t), !valid_creation(c);
 
     // ================= 4. roles and binding =================
@@ -211,12 +222,16 @@ ascent! {
 
     // ================= 5. conformance and knowledge =================
     relation sanitized(S, S); relation knows(S, S); relation disclose(S, S); relation does(S, S);
+    relation targeted(S);
+    targeted(a) <-- act_target(a, _);
     sanitized(i, x) <-- mode(w, m), if *m == "warrant", content(w, a), act_name(a, n), if *n == "disclose",
-                        act_info(a, x), on_pin(w, i), now(t), at(i, t), detached(w, t);
+                        act_info(a, x), !targeted(a), on_pin(w, i), now(t), at(i, t), detached(w, t);
     knows(i, x) <-- now(t), at(i, t), learns(i, x);
     knows(i2, x) <-- now(t), at(i2, t), knows_h(i1, x), edge(i1, i2, _), !sanitized(i2, x);
     knows(i2, x) <-- now(t), at(i2, t), knows_h(i1, x), feeds(i1, i2), !sanitized(i2, x);
     disclose(i, a) <-- act_name(a, n), if *n == "disclose", act_info(a, x), act_target(a, q), knows(i, x), with(i, q);
+    disclose(i, a) <-- act_name(a, n), if *n == "disclose", act_info(a, x), !targeted(a), does(i, a2),
+                       act_name(a2, n2), if *n2 == "disclose", act_info(a2, x), targeted(a2);
     does(i, a) <-- does_static(i, a);
     does(i, a) <-- disclose(i, a);
     does(i, a) <-- disclose_h(i, a);
@@ -283,7 +298,7 @@ ascent! {
     relation continuation_of(S, S, i64); relation open_defection(S, i64); relation in_good_standing(S, i64);
     defection(c, p, t) <-- violated(c, t), debtor(c, p), principal(p);
     defection(c, p, t) <-- violated(c, t), mode(c, m), if *m == "avoid", debtor(c, r), role(r), holder(r, p, t),
-                           performs(c, i, t), acts_for2(i, p);
+                           performs(c, i, t), content(c, a), conduct_of_all(i, a, p);
     defection(c, p, t) <-- violated(c, t), mode(c, m), if *m != "avoid", debtor(c, r), role(r), holder(r, p, t);
     defection(c, q, t) <-- violated(c, t), debtor(c, r), role(r), vacant(r, t), appointer(r, q);
     answered_breach(c, t) <-- defection_all(c, p, t), standing(p);

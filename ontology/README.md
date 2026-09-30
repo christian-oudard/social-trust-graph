@@ -1,367 +1,281 @@
 # A coordination ontology for human and machine parties
 
-Status: v0.2, an ontology and vocabulary. No protocol.
+v0.3. This is an ontology and a vocabulary, not a protocol.
 
-* The machine-checkable specification is `spec/core.lp`: about 140 Datalog rules, runnable
-  with clingo.
-* A line-by-line Rust port is in `rust/`, cross-checked against it.
-* v0.1 went through four adversarial reviews. What changed and why is in
-  `notes/v0.2_changes.md`.
+* The specification is `spec/core.lp`: about 150 Datalog rules, run with clingo.
+* `rust/` is a rule-for-rule port, cross-checked against it. It exists as evidence that
+  the notation converts to code.
+* Two rounds of adversarial review shaped it. See `notes/v0.2_changes.md`,
+  `notes/v0.3_changes.md` and `notes/review*`.
 
 ## 1. Thesis
 
-In the LLM era the thing that acts is a pipeline. Each part (weights, prompt, scaffold,
-memory, session, fork lineage) can be copied, rolled back, merged or replaced on its own.
-"Is this the same agent?" then has no determinate answer, so the ontology does not ask
-it. It asks instead:
+What acts is a pipeline whose parts can each be copied, rolled back, fed or replaced. So
+we do not ask "is this the same agent?". We ask: **does this invocation act for this
+principal, for this act?** A chain of acts, each one in scope, answers that.
 
-> **Does this invocation act for this principal, for this act?**
+* **Obligations are keyed by principal.** They live in a registry, and only acts in
+  scope change the registry. So no change to a pipeline discharges them.
+* **Authority and assurance are keyed by content.** They attach to what runs, through
+  pins and warranties. So a change to a pipeline can void them.
 
-That question has a determinate answer, given by a chain of acts that are each in scope.
-Everything else follows from keeping two things apart:
+Value drift therefore threatens assurance, never obligation. Enforcement survives drift
+only if it does not need the drifted pipeline's cooperation.
 
-* **Obligations are keyed by principal.** They live in a registry, not in the pipeline,
-  and only acts in scope change the registry. So no change to the pipeline can discharge
-  them.
-* **Authority and assurance are keyed by content.** They attach to what is running,
-  through explicit pins and warranties. So a change to the pipeline can void them, and
-  sometimes must.
+## 2. Identity, defined
 
-Value drift therefore threatens *assurance*, never *obligation*. Enforcement survives
-drift only when it does not depend on the drifting pipeline's future cooperation.
+"Same agent?" fuses three questions. Each normative question consults exactly one of
+them.
 
-The human case is the degenerate one:
-
-* one opaque content slot;
-* no copies;
-* no observable change events.
-
-So for a human, assurance can only expire.
-
-## 2. Primitives
-
-Five sorts. Everything else is a relation between them or is derived.
-
-| Sort | What it is | Human | Machine |
-|---|---|---|---|
-| **principal** | That to which acts and commitments are attributed; `kind` is person, org or machine | a person | an org, or a model insofar as it has capacities (§6) |
-| **role** | A position with a charter, held by principals over time | an office | same; *coordinator* is a role |
-| **invocation** | One sampling step: *which* (its place in the lineage DAG), *when*, *what content* it ran, *what acts* it did | a moment of a life | one model request and response; tool calls are its acts |
-| **commitment** | Directed deontic unit `C(debtor, creditor, trigger, content)` | promise, duty, mandate, consent, reference | same |
-| **act** | The domain vocabulary: name, amount, object, information, target | | |
-
-A commitment has one of five **modes**:
-
-* **achieve**: do the act by a deadline.
-* **avoid**: never do the act.
-* **power**: the grantor becomes answerable for, and bound by, what covered invocations
-  do within scope (Hohfeld's power/liability).
-* **permit**: the grantor excuses covered acts, and nothing more (Hohfeld's privilege).
-* **warrant**: the attester answers if *any* invocation running the pinned content does
-  the act. Evals, references and sanitization claims are warranties. Evidence is not a
-  separate sort; it is a promise someone can be held to.
-
-**Content** is a map from slot to hash per invocation, `slot(I, Slot, H)`.
-
-* Slots come from a closed vocabulary: weights, prompt, scaffold, tools, memory, context,
-  and self.
-* Each slot holds one hash. Layered parts, such as a base model plus a LoRA adapter, are
-  hashed together.
-* An opaque hash `opaque(Id)` is unobservable. A person is one opaque `self` slot. An API
-  model's weights are opaque.
-* A named "substrate" is only input sugar.
-
-**Lineage** is `edge(I1, I2, K)` with kind *continue*, *copy* or *merge*.
-
-* Swap, rewrite and rollback are derived from content.
-* Making any change is an act of the parent invocation. So "do not swap without notice"
-  is an ordinary avoid commitment.
-
-**Every change to the registry is an act**, effective only in scope and only from the
-next step:
-
-* creating a commitment;
-* releasing one (by the creditor's side);
-* revoking a power or permit (by the grantor's side);
-* copying;
-* merging;
-* changing content.
-
-What is not an act is **recognized**: `recognized(C, T)` is the adjudicator's explicit
-rule of recognition. It covers principals' root authority, duties imposed by law, and
-charters.
-
-## 3. Vocabulary (the brief's candidate terms)
-
-| Term | Status | Definition |
+| Question | Relation | Decides |
 |---|---|---|
-| principal, role, invocation, commitment | primitive | §2 |
-| substrate | derived | Content map of an invocation (§2) |
-| lineage | relation | `edge/3` over invocations; derived change kinds |
-| delegation scope | derived | The fields of a power or permit: `root`, `follows` (edge kinds crossed), `pin` (sets of content configurations), `allows` (act names with caps). Caveats accumulate down chains of sub-grants |
-| charter | derived | The commitments whose debtor is a role, including the role's powers |
-| invariant | dropped | An *avoid* commitment is a maintained invariant. What must stay fixed across change is a pin |
-| evidence | derived | A warranty: a commitment by the attester, ranging over pinned content |
-| conformance | derived | *fulfilled*, *violated*, and *clear* (every exposed invocation has a complete record kept by someone who can answer). Predictively, *assured* means a live warranty covers the invocation |
-| defection | derived | A breach attributed to a principal: the debtor; for a role, the performing holder (for acts) or every holder (for omissions); during a vacancy, the appointer; for a false claim of authority, whoever answers for the claimant |
-| repair | derived | Performance of a reparation after a particular breach, through chains (Governatori's ⊗) |
-| bond, collateral | derived | Reparation owed by someone other than the defector; or a power over the defector's performance, held by the creditor and given as security (irrevocable) |
-| custody / operator | derived | Holding an unattenuated power over a lineage |
-| standing | derived | Capacity to answer, one of four Hohfeldian capacities (§6) |
+| Same content? (*what*) | `slot` equality on pinned slots | authority under pins, assurance |
+| Same lineage? (*which*) | `edge` (continue, copy) | how authority and answerability propagate; succession |
+| Same party, for this act? (*whose*) | `acts_for(I, A, P)` | obligation, authority, answerability |
+
+For a person the three coincide: one opaque content slot, one lineage that cannot fork,
+one principal. So intuition treats identity as one thing. For a pipeline they come
+apart:
+
+* a copy shares content and lineage, but not necessarily the party;
+* a simulation shares content only;
+* a swapped agent shares lineage and party, but not content.
+
+A principal's identity is **recognized, not discovered**. A person is recognized by law.
+A machine principal is whatever its recognized root says: which lineage, which edge kinds
+it follows, which content it pins. Machine identity criteria are therefore declared,
+public, and relied on. They are never inferred from similarity. The `continue`/`copy`
+label is such a declaration, made by whoever runs the fork.
+
+## 3. Primitives
+
+There are **four sorts** plus an act vocabulary:
+
+* **principal**, of kind person, org or machine;
+* **role**, a position with a charter, held by appointment (a coordinator is a role);
+* **invocation**, one sampling step: its place in the lineage, its time, its content and
+  its acts (tool calls are acts);
+* **commitment** `C(debtor, creditor, trigger, content)`.
+
+A commitment has one of five modes:
+
+| Mode | Meaning |
+|---|---|
+| achieve | do the act by a deadline |
+| avoid | never do the act |
+| power | covered invocations act *for* the grantor: authority within scope, answerability for all their conduct (Hohfeld: power/liability) |
+| permit | covered acts are excused towards the grantor, and nothing more (privilege) |
+| warrant | the attester answers if *any* invocation running the pinned content does the act. Evals, references and sanitization claims are warranties; evidence is a promise someone can be held to |
+
+**Content** is `slot(I, Slot, H)`, one hash per slot from a closed vocabulary (weights
+with adapters, prompt, scaffold, tools, memory, context, self). `opaque(Id)` is
+unobservable: a person is one opaque self slot, and so is an API model's weights.
+
+**Lineage** is `edge(I1, I2, continue|copy)`. `feeds(I1, I2)` carries knowledge, never
+authority. Swap and rewrite are derived from content.
+
+**Every registry change is an act.** It is attributed like any act, effective only in
+scope, and takes effect from the next step. The registry acts are:
+
+* create;
+* release (by the creditor's side);
+* revoke (by the grantor's side);
+* appoint;
+* copy;
+* change content (by the parent, or by whoever `changed_by` names).
+
+An invocation steered by someone it does not act for (`induced`: fraud, duress, prompt
+injection) cannot change the registry. What is not an act is `recognized`: the
+adjudicator's explicit rule of recognition.
+
+The brief's other terms are derived:
+
+* **delegation scope**: `root`, `follows`, `pin` and `allows`, attenuated along `under`
+  citations;
+* **charter**: the commitments of a role;
+* **invariant**: an avoid commitment, or a pin;
+* **evidence**: a warranty;
+* **conformance**: fulfilled, violated, or *clear* (every exposed step recorded), with
+  *assured* as its predictive form;
+* **defection**: a breach attributed to the debtor, the performing holder, or a vacancy's
+  appointer;
+* **repair**: performance of a reparation, counted per breach;
+* **bond**: a reparation owed by a third party;
+* **collateral**: a *security*, a power over the debtor's performance held by the
+  creditor.
 
 ## 4. Laws
 
-Each law is stated so that it could be shown wrong. The tag says what currently tests it:
+Every law can be shown wrong. Tags say what tests it:
 
-* `S` or `X` is a scenario or a regression from review;
-* `C` is an exhaustive bounded check (every world up to 3 machine invocations, 2
-  instruments and 2 commitments, with roles, triggers, reparations, learning, merges and
-  all three hypotheses);
-* `P` is a metamorphic property over random larger worlds.
+* `S` or `X` is a scenario or regression;
+* `C` is an exhaustive check over all worlds within bounds;
+* `P` is a property on random worlds.
 
-Every rule is mutation-tested: 61 deliberate breaks of the core, all caught.
+The whole core is mutation-tested. Every statement is deleted in turn, and 42 semantic
+mutants are added; all 199 are caught.
 
-**L1. Attribution needs lineage, never content.** An act is P's only if it is performed
-by an invocation that meets all of these conditions:
+**L1. Attribution needs lineage, never content.**
 
-* it is reachable from a live power of P, along continue and copy edges the power
-  follows;
-* it satisfies the power's pins;
-* the act is within scope.
+* An act is P's only through a live power of P that reaches the invocation along
+  followed edges, with its pins met.
+* Identical content (a simulation, a theft), a feed, or a permit never attributes an act.
 
-What does not count:
+`C4 S5 X1`
 
-* identical content (a simulation, a stolen copy);
-* a merge edge (merges carry knowledge, never authority);
-* a permit.
+**L2. Authority is scoped; answerability is not.**
 
-Theft is content without lineage, so the thief binds nobody but itself.
-`C4 S5 X1 P2`
+* A promise binds P only within scope.
+* P answers for all conduct of the invocations it covers. That includes their copies,
+  and anything they feed into invocations no person or org acts for.
+* An out-of-scope promise binds nobody, because scope is public.
 
-**L2. Authority is scoped. Responsibility follows authorized acts, including copying.**
-
-* A promise binds P only within P's scope.
-* Making a copy is an act. Whoever's scope covered it answers for the copy's conduct and
-  for any claim of authority the copy makes. The copy gains no authority from this.
-* A promise induced by its own creditor (fraud, duress, prompt injection) is void, and
-  gives that creditor nothing.
-
-*v0.1 stated "responsibility = authority". The red team refuted it with fork-and-disown:
-a copy made in scope, but not followed by any grant, escaped every duty.*
-`S3 S5 X1 X2`
+`S3 S4 S5 X5 P4`
 
 **L3. Burdens are sticky, privileges are personal.**
 
-* No substrate change ends a commitment in force: swap, rewrite, rollback, fork or
-  merge.
-* Only these end one:
-  * the creditor's release;
-  * the grantor's revocation of a power or permit (never of a power given as security);
-  * a cascade from a revoked ancestor grant;
-  * a warranty's expiry.
-* A principal recognized over a *continuation* of a defaulting lineage inherits its open
-  defections. A fresh instantiation of the same weights does not.
-* Content enters deontics **only** through pins. A pin is a set of approved
-  configurations. So:
-  * a consent pinned to a model lapses on swap;
-  * a version warranty stops covering the new version;
-  * a performer-specific duty (Restatement (Second) of Contracts §318) cannot be
-    discharged by the replacement;
-  * an envelope of tested configurations survives changes within it, and not untested
-    mixes.
+* No change of content or lineage ends a commitment.
+* Only these end one: release, revocation (never of a security), cascade, expiry, a
+  repaired breach (for a security), and `until`.
+* A pin makes a privilege dormant off-pin; `until` ends it.
+* A continuation of a custodied lineage inherits open defections.
 
-`C3 P2 P3 S1 S2 X2 X3`
+`C3 P2 P3 S1 S2 X2`
 
 **L4. Drift threatens assurance, not obligation.**
 
-* An invocation is assured against an act iff some live warranty on its content covers
-  it, and the attester can answer.
-* So a swap voids assurance, and a rollback *restores* it while keeping every obligation
-  incurred since.
-* A warranty that leaves a slot unpinned claims robustness to every value of that slot.
-  If an edited prompt, or a contaminated context, produces the act, the attester has
-  defected.
-* Warranties about opaque content (references for people, API models) must expire.
+* Assured means a live warranty covers the content, and its attester can answer and does
+  not answer for the invocation.
+* An unpinned slot is a claim of robustness, so prompt edits or context contamination
+  that produce the act falsify it.
+* Warranties on opaque content must expire.
 
-`S1 S7 X3`
+`S1 S7 X3 X6`
 
-**L5. Fork law.** Forking multiplies the ways to break a promise, not the promises.
+**L5. Fork law.**
 
 * An *achieve* commitment is discharged once, by any branch the debtor answers for.
 * An *avoid* commitment is broken by any such branch.
-* Divergent branches can over-commit an exclusive object.
-* A rollback retracts nothing: an offer made before a rollback can still be accepted.
-* Only the offeree's side can accept an offer, and only after it exists.
+* Divergent branches over-commit exclusive objects.
+* A rollback retracts nothing.
 
 `S3 S5 P4`
 
-**L6. Delegation is an attenuation algebra in every dimension.**
+**L6. Delegation attenuates.** Down cited chains, caps take the minimum, followed kinds
+intersect, and pins accumulate. Revocation cascades. `C1 S4 X4 X5`
 
-* Down a chain of sub-grants, caps take the minimum, followed edge kinds intersect, and
-  pins accumulate.
-* Only a power that may delegate is a parent.
-* Revoking a grant revokes everything below it.
+**L7. Knowledge flows along every edge and feed.**
 
-An agent cannot launder its own pin through a sub-grant to itself, a copy, or a third
-lineage. `C1 S4 X4`
-
-**L7. Information flows along every lineage edge and every feed.**
-
-* It is cut only in two ways: by reverting to the observable content of an ancestor that
-  preceded all learning of it, or by a live sanitization warranty (whose attester
-  answers if a leak is observed).
-* Persons never revert, so they never forget.
-* Knowledge imputed to a principal is never cut.
-* Consenting to processing imputes nothing to the consenter.
-* Shared learning across parallel negotiations is a disclosure unless it is sanitized.
+* Only a live sanitization warranty cuts it, and its attester answers for a leak.
+* Imputed knowledge sticks.
+* Consent imputes nothing.
 
 `S2 S5 S7 X3`
 
-**L8. The machine question is a bundle, and settling it never changes obligations
-between persons and orgs.**
+**L8. The machine question never changes obligations between persons and orgs.**
 
-* Whether machines are parties is represented as which of four capacities they have:
-  owe, claim, empower, answer.
-* Commitments whose parties are persons or orgs, made through their own grants, are
-  identical under every answer.
 * Answerers only grow from `delegate` to `actor` to `party`.
-* Unanswered commitments arise only in three places:
-  * from machine debtors;
-  * from conduct of machine invocations that no principal with standing answers for;
-  * from offices with no answerable holder and no appointer.
+* Unanswered commitments come only from machine debtors.
+* Unanswered acts come only from lineages no person or org covers.
 
 `P1 C5 S3 S4 S6`
 
-**L9. Drift-invariant enforcement is a power held by the creditor.**
+**L9. Drift-invariant enforcement is a power the creditor holds.**
 
-* A self-reparation needs the drifted pipeline to perform.
-* A bond needs a third party to perform, and that party can drift too.
-* **Collateral** is a power over the debtor's performance, held in the creditor's own
-  lineage and triggered by the breach. It needs nobody else's future act. Given as
-  security, it is irrevocable, even by the grantor changing their mind.
+* A self-reparation needs the drifted pipeline, and a bond needs a third party, who can
+  drift too.
+* A *security* needs neither. The grantor cannot revoke it, and it ends once the breach
+  is repaired. This is Parfit's Russian nobleman.
 
-This is Parfit's Russian nobleman, whose wife holds the power over his future self.
-`S1`
+`S1 X5 X6`
 
 **L10. Offices outlive holders.**
 
-* Role commitments bind whoever holds the office when performance is due.
-* An act's breach belongs to its performer. An omission belongs to every holder. A
-  breach during a vacancy belongs to the appointer.
-* Role powers limit what can be promised in the role's name.
-* A holder who promises beyond them warrants authority they lack.
+* Duties bind the holder when performance is due.
+* An act's breach is its performer's; an omission is every holder's; a vacancy is the
+  appointer's.
+* Role powers need the holder's own authority.
 
-`S6 X4`
+`S6 X4 X6`
 
-## 5. Required test cases (all in `spec/scenarios/`)
+## 5. Drift, mapped
 
-| Case | File | Outcome |
+| Brief | Represented as |
+|---|---|
+| retraining, model swap | change of `weights`, the act of whoever made it (`changed_by`) |
+| prompt or memory edit, context contamination | change of `prompt` / `memory` / `context`; unpinned warranties are falsified by the act it causes |
+| copies diverge | fork law; answerability passes to copies |
+| human drift is continuous | one opaque slot, no observable events, so references expire |
+| bounded by continuity | persons cannot be copied (type error) |
+| bounded by reputation | `in_good_standing`, which passes to continuations; references are warranties |
+| bounded by mortality | a lineage that ends: its commitments remain (not modelled further) |
+
+## 6. Test cases (`spec/scenarios/`)
+
+| Case | File | Shows |
 |---|---|---|
-| Survives a model swap and a memory rewrite | `s1` | An NDA made by Alice's agent binds Alice after the agent forgets it and is re-weighted. The later sale is her breach. The evaluator's warranty loses assurance at the swap and restores it at rollback. Collateral lets Bob execute her reparation himself, even after she tries to revoke it |
-| Must not survive | `s2` | Bob's permit pinned to w1 excuses processing until the swap; then the same act is Alice's breach. Also covered: a version warranty (lapses), a performer-specific duty (can't be performed by w2), and a two-configuration envelope (survives the tested swap, not an untested mix) |
-| Divergence of two forks | `s3` | Both of Dana's branches act for her. A pre-fork prohibition is broken by one branch and a pre-fork duty discharged by the other. The divergent sales over-commit. Erin's copy can't bind her, but she answers for it. Fay's narrow grant covers neither, so her copy is nobody's unless the model can bear duties |
-| Human delegates narrow scope to a machine | `s4` | The cap holds against over-promising and against a sub-grant that asks for more. The w1 pin binds every sub-agent and defeats a self-issued laundering grant. Revocation is Alice's act and cascades. The operator warrants its agent's false authority. An unoperated model's promises are answered only if models can answer |
-| Fork, simulate, parallel negotiation with shared learning | `s5` | Naive Nia over-commits and leaks Q1's secret through a merge. Her simulation of Q1 binds Q1 to nothing, and yields assurance only because she warrants it. Her rollback leaves the first offer binding. Q2's prompt injection voids its own windfall. Partitioned Ola avoids both failures and answers for its probe |
-| Coordinator role | `s6` | Office held person → machine → two persons. Duties follow the office; breaches stay with performers. A vacancy is the board's. A promise *to* a model binds only if models can hold claims |
-| Human baseline | `s7` | Unique opaque content; references expire; persons don't forget; audit records count only if their keeper can answer |
-| Review regressions | `x1`–`x4` | Theft, manufactured consent, merge hijack, self-release, dual agent, fork-and-disown, re-registration, slot games, laundered sanitization, role revocation, per-breach repair, parenthood |
+| Survives swap and memory rewrite | `s1` | NDA binds after forgetting and a vendor re-weight; the vendor's no-swap promise breaks; collateral repairs despite Alice's revocation |
+| Must not survive | `s2` | pinned consent is dormant after a swap; `until` terminates it; version warranty; performer-specific duty; envelopes |
+| Divergent forks | `s3` | both branches bind Dana; copies are their copier's; a wild instance is answered for only if models can owe |
+| Narrow delegation | `s4` | caps and pins bind every sub-agent; pin laundering fails; revocation cascades |
+| Fork, simulate, negotiate in parallel | `s5` | naive leak and over-commitment vs partition; simulations bind nobody; rollback keeps offers; injection voids |
+| Coordinator | `s6` | office by appointment, person → machine → persons; vacancy is the board's |
+| Human baseline, regressions | `s7`, `x1`–`x6` | |
 
-## 6. The open question, held open
+## 7. The open question
 
-Whether a machine is a party or only a delegate is `hyp(H)`, a Hohfeldian **capacity
-bundle**. Every scenario runs under all three bundles.
+Machines' capacities are `hyp(H)`, and every scenario runs under all three bundles:
 
 | H | Machines can | Reading |
 |---|---|---|
-| `delegate` | nothing: they cannot owe, claim, empower or answer | current law (Restatement (Third) of Agency §1.04 cmt. e: tools) |
-| `actor` | owe and answer | "duties without rights" (O'Keefe et al., *Law-Following AI*) |
-| `party` | owe, claim, empower and answer | contracting AI (Salib & Goldstein); personhood as a bundle (Leibo et al.) |
+| `delegate` | nothing | tools (Restatement (Third) of Agency §1.04 cmt e) |
+| `actor` | owe | duties without rights (O'Keefe et al.) |
+| `party` | owe and claim | contracting AI (Salib & Goldstein); personhood as a bundle (Leibo et al.) |
 
-The question matters only where no person or org stands behind the machine (L8):
+The answer matters only where no person or org stands behind a machine: a wild instance,
+a machine in office, a model's own promise, or a promise made to a model.
 
-* a model nobody operates (`s4`);
-* a copy outside every human grant (`s3`);
-* a machine in office (`s6`);
-* a promise made *to* a model (`s6`).
+**The person is the core unit** in three ways:
 
-That is a sharper form of "are AIs persons?". It asks which of these breaches we are
-prepared to leave unanswered, and which capacities would close them.
+* persons have every capacity unconditionally;
+* their identity needs no declared criterion;
+* every open question is stated as what happens where no person answers.
 
-## 7. Why this notation (prior art)
+## 8. Prior art and notation
 
-Surveys with verification tags are in `notes/survey_*.md`.
+Surveys are in `notes/survey_*`.
 
-* **Reused:**
-  * Singh's commitment `C(x, y, r, u)` and its lifecycle;
-  * Hohfeld's incidents, as the five modes and the four capacities;
-  * Governatori's reparation chains;
-  * Symboleo's liable/performer/right-holder split, which is our debtor, invocation and
-    creditor;
-  * caveat accumulation from macaroons, UCAN and Biscuit;
-  * PROV's lineage;
-  * Crawford and Ostrom's ADICO, which maps onto debtor, mode, content, trigger and
-    reparation;
-  * BSPL/Cupid's view that norm state is a query over an event log;
-  * agency and contract law for the criteria:
-    * delegability when the performer is material (§318);
-    * warranty of authority;
-    * powers given as security (§3.12);
-    * successor liability;
-    * sub-processor authorization under GDPR Art. 28(2);
-    * pre-declared change envelopes under the AI Act, Art. 43(4).
-* **The gap filled:** no surveyed framework says what happens to an obligation when its
-  bearer is forked or its internals are swapped. Our additions are:
-  * lineage-scoped powers;
-  * pins as the only link from content to deontics;
-  * warranties as evidence;
-  * the fork law;
-  * copy responsibility;
-  * capacities as a switch with a monotonicity law.
-* **Language: Answer Set Programming (clingo), restricted in `core.lp` to Datalog with
-  negation.**
-  * Default reasoning is central. A commitment holds unless ended, an act is a breach
-    unless excused, and a power covers unless off-pin.
-  * One file serves both as a rule engine on concrete records and, through choice rules,
-    as a bounded model finder for counterexamples.
-  * The core is *time-stratified*. Every negative cycle passes through an earlier step:
-    registry acts take effect at the next step, and reparations detach after the breach.
-    So it runs as a per-step fold in a stratified Rust Datalog engine (`ascent`). The
-    port matches clingo on every scenario and on 100 random worlds, under every
-    hypothesis.
-  * Alloy 6 was the close second: better types, weaker defaults, no path to code. Types
-    are recovered in `types.lp`, which reports ill-sorted facts as errors.
+* **Notation.** The core is event-calculus inertia (a commitment holds unless an act ends
+  it) in Answer Set Programming. Its defaults do the work of defeasible deontic logic.
+  * Alloy 6 was the close second: the tools survey recommended it unless defaults proved
+    central, which they did.
+  * TLA+ lacks defaults.
+  * The Datalog fragment is time-stratified and ports line-for-line to Rust.
+* **Reused.**
+  * Singh's commitments.
+  * Hohfeld's incidents, as the modes and capacities.
+  * Governatori's reparation chains.
+  * Symboleo's split of liable, performer and right-holder.
+  * Macaroon, UCAN and Biscuit attenuation.
+  * PROV lineage.
+  * ADICO, which maps onto debtor, mode, content, trigger and reparation.
+  * Agency and contract law.
+* **The gap filled.** No surveyed framework handles forked or swapped bearers.
 * **No notation was invented.**
 
-## 8. Known limits
+## 9. Limits
 
-* **The record is trusted.** The core is a function from an accepted record to verdicts.
-  It now pins down *what* must be attested:
-  * edges are acts of their parent, and theft has no edge;
-  * content hashes;
-  * acts;
-  * complete records.
-
-  Who attests them, and disagreement between observers, are outside it.
-* **Standards and values.** Charters are sets of act-type commitments. "Act with loyalty"
-  or "use reasonable care" needs a judging role, which is not modelled. A principal's own
-  change of mind is handled only as far as release, revocation and securities go.
-* **Quantities.** Caps are per act. Budgets can be expressed as exclusive tokens, but
-  aggregates are not in the fragment.
-* **Statistics.** Warranties are exact claims, but real models are stochastic. A warranty
-  should carry a rate and a sample size.
-* **Collectibility.** Answerability is not solvency. Collateral is the collectible form.
-* **Notice.** Registry acts take effect at the next step for everyone. General
-  authorization with notice and objection (GDPR Art. 28(2)) is not modelled.
-* **Bounds.** The checks refute but never prove.
-
-## 9. Running
+* The record is trusted. The core says *what* must be attested; *who* attests it is
+  outside the core.
+* Standards such as "reasonable care" need a judging role.
+* Budgets need aggregates; exclusive tokens are the workaround.
+* Warranties are exact, but models are stochastic.
+* Answerability is not solvency.
+* Notice is instant. Reliance on a revoked scope during registry lag is where L2's
+  no-warranty rule would fail.
+* Succession detection is limited to recognized roots over a continuing lineage.
+* Checks are bounded.
 
 ```sh
-pip install clingo                  # 5.8
-cd spec
-python3 run.py                      # scenarios under all three hypotheses + exhaustive checks
-python3 props.py 200 1              # metamorphic properties
-python3 mutants.py                  # mutation score
-python3 crosscheck.py --random 100  # Rust port vs clingo (build ../rust first)
-./check.sh                          # all of the above
+pip install clingo && cd spec && ./check.sh   # scenarios, checks, properties, mutants, Rust cross-check
 ```
